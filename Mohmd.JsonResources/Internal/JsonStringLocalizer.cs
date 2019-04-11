@@ -21,7 +21,6 @@ namespace Mohmd.JsonResources.Internal
 
         private readonly ConcurrentDictionary<string, Lazy<JObject>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JObject>>();
         private readonly IEnumerable<string> _resourceFileLocations;
-        private readonly string _resourceBaseName;
         private readonly JsonGlobalResources _globalResources;
         private readonly IActionContextAccessor _actionContextAccessor;
         private readonly RequestCulture _defaultCulture;
@@ -33,28 +32,17 @@ namespace Mohmd.JsonResources.Internal
 
         public JsonStringLocalizer(
             string resourceBaseName,
-            string applicationName,
-            JsonGlobalResources globalResources,
+            IHostingEnvironment env,
             IActionContextAccessor actionContextAccessor,
-            RequestCulture defaultCulture,
-            IHostingEnvironment env)
+            JsonGlobalResources globalResources,
+            RequestCulture defaultCulture)
         {
-            if (string.IsNullOrEmpty(resourceBaseName))
-            {
-                throw new ArgumentNullException(nameof(resourceBaseName));
-            }
-
-            if (string.IsNullOrEmpty(applicationName))
-            {
-                throw new ArgumentNullException(nameof(applicationName));
-            }
-
-            _resourceBaseName = resourceBaseName;
-            _resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, applicationName).ToList();
-            _globalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
-            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
-            _defaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
             _env = env ?? throw new ArgumentNullException(nameof(env));
+            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
+            _globalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
+            _defaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+
+            _resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _env.ApplicationName).ToList();
         }
 
         #endregion
