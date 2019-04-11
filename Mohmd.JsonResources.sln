@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mohmd.JsonResources", "JsonResources\Mohmd.JsonResources.csproj", "{3B1EA403-902C-48DC-9EC0-EFCDC0CDCD34}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mohmd.JsonResources", "Mohmd.JsonResources\Mohmd.JsonResources.csproj", "{B3C15F7B-4948-4608-A5AA-5B1067E962B5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3B1EA403-902C-48DC-9EC0-EFCDC0CDCD34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3B1EA403-902C-48DC-9EC0-EFCDC0CDCD34}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3B1EA403-902C-48DC-9EC0-EFCDC0CDCD34}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3B1EA403-902C-48DC-9EC0-EFCDC0CDCD34}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3C15F7B-4948-4608-A5AA-5B1067E962B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3C15F7B-4948-4608-A5AA-5B1067E962B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3C15F7B-4948-4608-A5AA-5B1067E962B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3C15F7B-4948-4608-A5AA-5B1067E962B5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
