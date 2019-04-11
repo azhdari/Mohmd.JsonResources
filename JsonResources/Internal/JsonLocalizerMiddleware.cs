@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
 
-namespace JsonResources.Internal
+namespace Mohmd.JsonResources.Internal
 {
     internal class JsonLocalizerMiddleware
     {

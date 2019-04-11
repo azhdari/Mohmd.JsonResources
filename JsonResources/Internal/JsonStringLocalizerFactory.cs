@@ -1,17 +1,17 @@
-using JsonResources.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using Mohmd.JsonResources.Extensions;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace JsonResources.Internal
+namespace Mohmd.JsonResources.Internal
 {
     internal class JsonStringLocalizerFactory : IStringLocalizerFactory
     {

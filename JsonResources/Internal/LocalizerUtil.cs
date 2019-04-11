@@ -4,7 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace JsonResources.Internal
+namespace Mohmd.JsonResources.Internal
 {
     internal static class LocalizerUtil
     {

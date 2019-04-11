@@ -1,4 +1,4 @@
-﻿namespace JsonResources.Extensions
+﻿namespace Mohmd.JsonResources.Extensions
 {
     public class JsonLocalizationOptions
     {

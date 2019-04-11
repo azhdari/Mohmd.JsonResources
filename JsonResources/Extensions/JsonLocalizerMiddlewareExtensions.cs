@@ -1,4 +1,4 @@
-﻿using JsonResources.Internal;
+﻿using Mohmd.JsonResources.Internal;
 
 namespace Microsoft.AspNetCore.Builder
 {

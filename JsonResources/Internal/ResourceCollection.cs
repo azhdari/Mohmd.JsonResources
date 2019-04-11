@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace JsonResources.Internal
+namespace Mohmd.JsonResources.Internal
 {
     internal class ResourceCollection
     {

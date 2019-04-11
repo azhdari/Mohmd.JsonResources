@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
+using Mohmd.JsonResources.Extensions;
+using Mohmd.JsonResources.Internal;
 using System;
-using JsonResources.Extensions;
-using JsonResources.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

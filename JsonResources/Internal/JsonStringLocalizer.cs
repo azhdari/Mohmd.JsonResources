@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace JsonResources.Internal
+namespace Mohmd.JsonResources.Internal
 {
     internal class JsonStringLocalizer : IStringLocalizer
     {

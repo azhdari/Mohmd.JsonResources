@@ -1,7 +1,7 @@
-using JsonResources.Extensions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
+using Mohmd.JsonResources.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace JsonResources.Internal
+namespace Mohmd.JsonResources.Internal
 {
     internal class JsonGlobalResources
     {
