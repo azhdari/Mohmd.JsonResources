@@ -22,9 +22,9 @@ namespace Mohmd.JsonResources.Internal
         private readonly ConcurrentDictionary<string, Lazy<JObject>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JObject>>();
         private readonly IEnumerable<string> _resourceFileLocations;
         private readonly JsonGlobalResources _globalResources;
-        private readonly IActionContextAccessor _actionContextAccessor;
         private readonly RequestCulture _defaultCulture;
         private readonly IHostingEnvironment _env;
+        private readonly IActionContextAccessor _actionContextAccessor;
 
         #endregion
 
@@ -33,14 +33,14 @@ namespace Mohmd.JsonResources.Internal
         public JsonStringLocalizer(
             string resourceBaseName,
             IHostingEnvironment env,
-            IActionContextAccessor actionContextAccessor,
             JsonGlobalResources globalResources,
-            RequestCulture defaultCulture)
+            RequestCulture defaultCulture,
+            IActionContextAccessor actionContextAccessor)
         {
             _env = env ?? throw new ArgumentNullException(nameof(env));
-            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
             _globalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
             _defaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
 
             _resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _env.ApplicationName).ToList();
         }

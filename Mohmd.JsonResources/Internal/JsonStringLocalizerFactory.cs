@@ -23,14 +23,18 @@ namespace Mohmd.JsonResources.Internal
         private readonly IHostingEnvironment _env;
         private readonly string _resourcesRelativePath;
         private readonly JsonGlobalResources _globalResources;
-        private readonly IActionContextAccessor _actionContextAccessor;
         private readonly RequestCulture _defaultCulture;
+        private readonly IActionContextAccessor _actionContextAccessor;
 
         #endregion
 
         #region Constructors
 
-        public JsonStringLocalizerFactory(IHostingEnvironment hostingEnvironment, IOptions<JsonLocalizationOptions> options, IOptions<RequestLocalizationOptions> requestLocalizationOptions, IActionContextAccessor actionContextAccessor)
+        public JsonStringLocalizerFactory(
+            IHostingEnvironment hostingEnvironment,
+            IOptions<JsonLocalizationOptions> options,
+            IOptions<RequestLocalizationOptions> requestLocalizationOptions,
+            IActionContextAccessor actionContextAccessor)
         {
             if (options == null)
             {
@@ -38,8 +42,8 @@ namespace Mohmd.JsonResources.Internal
             }
 
             _env = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
-            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
             _defaultCulture = requestLocalizationOptions.Value.DefaultRequestCulture;
+            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
 
             _resourcesRelativePath = options.Value?.ResourcesPath ?? string.Empty;
             if (!string.IsNullOrEmpty(_resourcesRelativePath))
@@ -65,7 +69,7 @@ namespace Mohmd.JsonResources.Internal
 
             // Re-root the base name if a resources path is set.
             var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? typeInfo.FullName : _env.ApplicationName + "." + _resourcesRelativePath + "." + LocalizerUtil.TrimPrefix(typeInfo.FullName, _env.ApplicationName + ".");
-            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _actionContextAccessor, _globalResources, _defaultCulture));
+            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor));
         }
 
         public IStringLocalizer Create(string baseName, string location)
@@ -84,7 +88,7 @@ namespace Mohmd.JsonResources.Internal
                 resourceBaseName = resourceBaseName.Substring(0, resourceBaseName.Length - viewExtension.Length);
             }
 
-            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _actionContextAccessor, _globalResources, _defaultCulture));
+            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor));
         }
 
         public void ClearCache()
