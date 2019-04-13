@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Mohmd.JsonResources.Example
@@ -26,6 +27,8 @@ namespace Mohmd.JsonResources.Example
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 options.CheckConsentNeeded = context => true;
@@ -38,13 +41,10 @@ namespace Mohmd.JsonResources.Example
                 var supportedCultures = new List<CultureInfo>
                 {
                     new CultureInfo("fa-IR"),
-                    new CultureInfo("fa"),
                     new CultureInfo("en-US"),
-                    new CultureInfo("en-GB"),
-                    new CultureInfo("en"),
                 };
 
-                options.DefaultRequestCulture = new RequestCulture("fa");
+                options.DefaultRequestCulture = new RequestCulture("en-US");
                 options.SupportedCultures = supportedCultures;
                 options.SupportedUICultures = supportedCultures;
             });

@@ -25,6 +25,7 @@ namespace Mohmd.JsonResources.Internal
         private readonly string _globalName;
         private readonly string _areaName;
         private readonly RequestCulture _defaultCulture;
+        private readonly JsonLocalizationOptions _options;
 
         #endregion
 
@@ -37,12 +38,13 @@ namespace Mohmd.JsonResources.Internal
                 throw new ArgumentNullException(nameof(options));
             }
 
+            _options = options.Value;
             _app = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
-            _globalName = options.Value?.GlobalResourceFileName ?? "global";
-            _areaName = options.Value?.AreasResourcePrefix ?? "areas";
+            _globalName = _options.GlobalResourceFileName ?? "global";
+            _areaName = _options.AreasResourcePrefix ?? "areas";
             _defaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
 
-            _resourcesRelativePath = options.Value?.ResourcesPath ?? string.Empty;
+            _resourcesRelativePath = _options.ResourcesPath ?? string.Empty;
             if (!string.IsNullOrEmpty(_resourcesRelativePath))
             {
                 _resourcesRelativePath = _resourcesRelativePath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
@@ -64,7 +66,7 @@ namespace Mohmd.JsonResources.Internal
             }
 
             var cacheName = "global";
-            cacheName = cacheName + (string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix);
+            cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
 
             var lazyJObjectGetter = new Lazy<JObject>(
                 () =>
@@ -131,7 +133,7 @@ namespace Mohmd.JsonResources.Internal
             var areaSuffix = $".{areaName}";
 
             var cacheName = $"{_areaName}{areaSuffix}";
-            cacheName = cacheName + (string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix);
+            cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
 
             var lazyJObjectGetter = new Lazy<JObject>(
                 () =>
