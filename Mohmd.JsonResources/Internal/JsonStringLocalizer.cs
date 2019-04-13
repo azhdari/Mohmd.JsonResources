@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Localization;
+using Mohmd.JsonResources.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -21,11 +22,11 @@ namespace Mohmd.JsonResources.Internal
 
         private readonly ConcurrentDictionary<string, Lazy<JObject>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JObject>>();
         private readonly IEnumerable<string> _resourceFileLocations;
-        private readonly string _resourceBaseName;
         private readonly JsonGlobalResources _globalResources;
-        private readonly IActionContextAccessor _actionContextAccessor;
         private readonly RequestCulture _defaultCulture;
         private readonly IHostingEnvironment _env;
+        private readonly IActionContextAccessor _actionContextAccessor;
+        private readonly JsonLocalizationOptions _options;
 
         #endregion
 
@@ -33,28 +34,19 @@ namespace Mohmd.JsonResources.Internal
 
         public JsonStringLocalizer(
             string resourceBaseName,
-            string applicationName,
+            IHostingEnvironment env,
             JsonGlobalResources globalResources,
-            IActionContextAccessor actionContextAccessor,
             RequestCulture defaultCulture,
-            IHostingEnvironment env)
+            IActionContextAccessor actionContextAccessor,
+            JsonLocalizationOptions options)
         {
-            if (string.IsNullOrEmpty(resourceBaseName))
-            {
-                throw new ArgumentNullException(nameof(resourceBaseName));
-            }
-
-            if (string.IsNullOrEmpty(applicationName))
-            {
-                throw new ArgumentNullException(nameof(applicationName));
-            }
-
-            _resourceBaseName = resourceBaseName;
-            _resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, applicationName).ToList();
-            _globalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
-            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
-            _defaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _env = env ?? throw new ArgumentNullException(nameof(env));
+            _globalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
+            _defaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
+
+            _resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _env.ApplicationName).ToList();
         }
 
         #endregion
@@ -157,21 +149,6 @@ namespace Mohmd.JsonResources.Internal
                         .Value;
                 }
 
-                //var area = _globalResources.GetAreaResources(keyCulture, areaName);
-                //if (area?.TryGetValue(name, StringComparison.OrdinalIgnoreCase, out token) == true)
-                //{
-                //    var localized = token.ToString();
-                //    return localized;
-                //}
-
-                //// if not found, then try find the name in global resources
-                //var global = _globalResources.GetGlobalResources(keyCulture);
-                //if (global?.TryGetValue(name, StringComparison.OrdinalIgnoreCase, out token) == true)
-                //{
-                //    var localized = token.ToString();
-                //    return localized;
-                //}
-
                 // Consult parent culture.
                 previousCulture = currentCulture;
                 currentCulture = currentCulture.Parent;
@@ -179,11 +156,6 @@ namespace Mohmd.JsonResources.Internal
             while (previousCulture != currentCulture);
 
             // if we got here, so no resource found
-            if (!keyCulture.Name.Equals("fa", StringComparison.OrdinalIgnoreCase) && !keyCulture.Name.Equals("fa-IR", StringComparison.OrdinalIgnoreCase))
-            {
-                return GetStringSafely(name, new CultureInfo("fa"));
-            }
-
             return null;
         }
 

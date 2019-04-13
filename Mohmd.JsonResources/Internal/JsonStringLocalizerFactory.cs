@@ -20,28 +20,29 @@ namespace Mohmd.JsonResources.Internal
         private static readonly string[] KnownViewExtensions = new[] { ".cshtml" };
 
         private readonly ConcurrentDictionary<string, JsonStringLocalizer> _localizerCache = new ConcurrentDictionary<string, JsonStringLocalizer>();
-        private readonly IHostingEnvironment _app;
+        private readonly IHostingEnvironment _env;
         private readonly string _resourcesRelativePath;
         private readonly JsonGlobalResources _globalResources;
-        private readonly IActionContextAccessor _actionContextAccessor;
         private readonly RequestCulture _defaultCulture;
+        private readonly IActionContextAccessor _actionContextAccessor;
+        private readonly JsonLocalizationOptions _options;
 
         #endregion
 
         #region Constructors
 
-        public JsonStringLocalizerFactory(IHostingEnvironment hostingEnvironment, IOptions<JsonLocalizationOptions> options, IOptions<RequestLocalizationOptions> requestLocalizationOptions, IActionContextAccessor actionContextAccessor)
+        public JsonStringLocalizerFactory(
+            IHostingEnvironment hostingEnvironment,
+            IOptions<JsonLocalizationOptions> options,
+            IOptions<RequestLocalizationOptions> requestLocalizationOptions,
+            IActionContextAccessor actionContextAccessor)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            _app = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
-            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
+            _options = options.Value;
+            _env = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
             _defaultCulture = requestLocalizationOptions.Value.DefaultRequestCulture;
+            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
 
-            _resourcesRelativePath = options.Value?.ResourcesPath ?? string.Empty;
+            _resourcesRelativePath = _options.ResourcesPath ?? string.Empty;
             if (!string.IsNullOrEmpty(_resourcesRelativePath))
             {
                 _resourcesRelativePath = _resourcesRelativePath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
@@ -62,11 +63,10 @@ namespace Mohmd.JsonResources.Internal
             }
 
             var typeInfo = resourceSource.GetTypeInfo();
-            var assembly = typeInfo.Assembly;
 
             // Re-root the base name if a resources path is set.
-            var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? typeInfo.FullName : _app.ApplicationName + "." + _resourcesRelativePath + "." + LocalizerUtil.TrimPrefix(typeInfo.FullName, _app.ApplicationName + ".");
-            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _app.ApplicationName, _globalResources, _actionContextAccessor, _defaultCulture, _app));
+            var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? typeInfo.FullName : _env.ApplicationName + "." + _resourcesRelativePath + "." + LocalizerUtil.TrimPrefix(typeInfo.FullName, _env.ApplicationName + ".");
+            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options));
         }
 
         public IStringLocalizer Create(string baseName, string location)
@@ -76,7 +76,7 @@ namespace Mohmd.JsonResources.Internal
                 throw new ArgumentNullException(nameof(baseName));
             }
 
-            location = location ?? _app.ApplicationName;
+            location = location ?? _env.ApplicationName;
             var resourceBaseName = location + "." + _resourcesRelativePath + "." + LocalizerUtil.TrimPrefix(baseName, location + ".");
 
             var viewExtension = KnownViewExtensions.FirstOrDefault(extension => resourceBaseName.EndsWith(extension));
@@ -85,7 +85,7 @@ namespace Mohmd.JsonResources.Internal
                 resourceBaseName = resourceBaseName.Substring(0, resourceBaseName.Length - viewExtension.Length);
             }
 
-            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _app.ApplicationName, _globalResources, _actionContextAccessor, _defaultCulture, _app));
+            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options));
         }
 
         public void ClearCache()
