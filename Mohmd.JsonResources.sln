@@ -5,7 +5,12 @@ VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mohmd.JsonResources", "Mohmd.JsonResources\Mohmd.JsonResources.csproj", "{B3C15F7B-4948-4608-A5AA-5B1067E962B5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mohmd.JsonResources.Example", "Mohmd.JsonResources.Example\Mohmd.JsonResources.Example.csproj", "{7CF0E52E-DD47-4728-B144-90C41AF0A617}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mohmd.JsonResources.Example", "Mohmd.JsonResources.Example\Mohmd.JsonResources.Example.csproj", "{7CF0E52E-DD47-4728-B144-90C41AF0A617}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B3926DFC-46C2-4892-B5A0-D8C7B83A3061}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
