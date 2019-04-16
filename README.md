@@ -71,7 +71,7 @@ There are 3 general ways to add locale resources to your projects.
 We can use all of along side each other.
 
 #### Global File
-Create global.json (or what every you set
+Create global.json (or whatever you set
 in `options.GlobalResourceFileName`) in root of resources directory.  
 ```
 global.json
