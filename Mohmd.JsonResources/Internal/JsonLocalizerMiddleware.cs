@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
+using System.Globalization;
 using System.Threading.Tasks;
 
 namespace Mohmd.JsonResources.Internal
@@ -24,6 +25,9 @@ namespace Mohmd.JsonResources.Internal
                 httpContext.Response.Cookies.Append(
                     key: CookieRequestCultureProvider.DefaultCookieName,
                     value: CookieRequestCultureProvider.MakeCookieValue(_options.DefaultRequestCulture));
+
+                CultureInfo.CurrentCulture = _options.DefaultRequestCulture.Culture;
+                CultureInfo.CurrentUICulture = _options.DefaultRequestCulture.UICulture;
             }
 
             await _next.Invoke(httpContext);

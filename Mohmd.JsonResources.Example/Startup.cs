@@ -81,8 +81,8 @@ namespace Mohmd.JsonResources.Example
             app.UseCookiePolicy();
 
             // Localization
-            app.UseJsonLocalizer();
             app.UseRequestLocalization(localizationOptions.Value);
+            app.UseJsonLocalizer();
 
             app.UseMvc(routes =>
             {
