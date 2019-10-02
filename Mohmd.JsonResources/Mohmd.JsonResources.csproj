@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
-    <Version>1.1.1</Version>
+    <TargetFrameworks>netcoreapp3.0;netcoreapp2.0</TargetFrameworks>
+    <Version>1.2.0-preview2</Version>
     <Authors>Mohammad Azhdari</Authors>
     <Product>JsonResources</Product>
-    <Description>JSON Localization Resources for ASP.NET Core 2.0 and later</Description>
+    <Description>JSON Localization Resources for ASP.NET Core 2.0 and 3.0</Description>
     <PackageLicenseExpression />
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/azhdari/Mohmd.JsonResources</PackageProjectUrl>
@@ -19,11 +19,19 @@
     <None Remove="README.md" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Localization" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
 
   <ItemGroup>
