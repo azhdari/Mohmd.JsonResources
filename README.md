@@ -1,8 +1,8 @@
 # Mohmd.JsonResources
-JSON Localization Resources for ASP.NET Core 2.0 and later
+JSON Localization Resources for ASP.NET Core 2.0 and 3.0
 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://github.com/azhdari/Mohmd.JsonResources/blob/master/License.txt)
-[![NuGet](https://img.shields.io/badge/nuget-1.1.0-blue.svg?style=flat-square)](https://www.nuget.org/packages/Mohmd.JsonResources/)
+[![NuGet](https://img.shields.io/badge/nuget-1.2.0--preview2-blue.svg?style=flat-square)](https://www.nuget.org/packages/Mohmd.JsonResources/1.2.0-preview2)
 
 ## Getting Started
 Use these instructions to get the package and use it.
@@ -10,15 +10,15 @@ Use these instructions to get the package and use it.
 ### Install
 From the command prompt
 ```bash
-dotnet add package Mohmd.JsonResources
+dotnet add package Mohmd.JsonResources --version 1.2.0-preview2
 ```
 or
 ```bash
-Install-Package Mohmd.JsonResources
+Install-Package Mohmd.JsonResources -Version 1.2.0-preview2
 ```
 or
 ```bash
-paket add Mohmd.JsonResources
+paket add Mohmd.JsonResources --version 1.2.0-preview2
 ```
 
 ### Configure
