@@ -54,6 +54,7 @@ namespace Mohmd.JsonResources.Example
                 options.ResourcesPath = "Resources";
                 options.GlobalResourceFileName = "global";
                 options.AreasResourcePrefix = "areas";
+                options.SetDefaultCultureCookie = true;
             });
 
             services.AddMvc()

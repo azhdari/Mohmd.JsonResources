@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
 using Mohmd.JsonResources.Extensions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 
 namespace Mohmd.JsonResources.Internal
@@ -19,7 +18,7 @@ namespace Mohmd.JsonResources.Internal
     {
         #region Fields
 
-        private readonly ConcurrentDictionary<string, Lazy<JObject>> _resources = new ConcurrentDictionary<string, Lazy<JObject>>();
+        private readonly ConcurrentDictionary<string, Lazy<JsonDocument>> _resources = new ConcurrentDictionary<string, Lazy<JsonDocument>>();
         private readonly IHostingEnvironment _app;
         private readonly string _resourcesRelativePath;
         private readonly string _globalName;
@@ -55,7 +54,7 @@ namespace Mohmd.JsonResources.Internal
 
         #region Methods
 
-        public JObject GetGlobalResources(CultureInfo culture)
+        public JsonDocument GetGlobalResources(CultureInfo culture)
         {
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
@@ -68,7 +67,7 @@ namespace Mohmd.JsonResources.Internal
             var cacheName = "global";
             cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
 
-            var lazyJObjectGetter = new Lazy<JObject>(
+            var lazyJObjectGetter = new Lazy<JsonDocument>(
                 () =>
                 {
                     var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + _resourcesRelativePath + "." + _globalName;
@@ -98,11 +97,7 @@ namespace Mohmd.JsonResources.Internal
                         var resourceFileStream = new FileStream(resourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
                         using (resourceFileStream)
                         {
-                            var resourceReader = new JsonTextReader(new StreamReader(resourceFileStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true));
-                            using (resourceReader)
-                            {
-                                return JObject.Load(resourceReader);
-                            }
+                            return JsonDocument.Parse(resourceFileStream);
                         }
                     }
                     catch (Exception)
@@ -115,7 +110,7 @@ namespace Mohmd.JsonResources.Internal
             return lazyJObjectGetter.Value;
         }
 
-        public JObject GetAreaResources(CultureInfo culture, string areaName)
+        public JsonDocument GetAreaResources(CultureInfo culture, string areaName)
         {
             if (string.IsNullOrEmpty(areaName?.Trim()))
             {
@@ -135,7 +130,7 @@ namespace Mohmd.JsonResources.Internal
             var cacheName = $"{_areaName}{areaSuffix}";
             cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
 
-            var lazyJObjectGetter = new Lazy<JObject>(
+            var lazyJObjectGetter = new Lazy<JsonDocument>(
                 () =>
                 {
                     var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + _resourcesRelativePath + "." + _areaName;
@@ -165,11 +160,7 @@ namespace Mohmd.JsonResources.Internal
                         var resourceFileStream = new FileStream(resourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
                         using (resourceFileStream)
                         {
-                            var resourceReader = new JsonTextReader(new StreamReader(resourceFileStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true));
-                            using (resourceReader)
-                            {
-                                return JObject.Load(resourceReader);
-                            }
+                            return JsonDocument.Parse(resourceFileStream);
                         }
                     }
                     catch (Exception)
@@ -213,7 +204,7 @@ namespace Mohmd.JsonResources.Internal
 
         #region Utilities
 
-        private ResourceCollection ConvertToResourceCollection(JObject jsonObject, string locale)
+        private ResourceCollection ConvertToResourceCollection(JsonDocument jsonObject, string locale)
         {
             if (jsonObject == null)
             {
@@ -221,10 +212,15 @@ namespace Mohmd.JsonResources.Internal
             }
 
             IDictionary<string, string> dic = new Dictionary<string, string>();
-            foreach (var item in jsonObject.Properties())
-            {
-                dic.TryAdd(item.Name, item.Value.Value<string>());
-            }
+
+            jsonObject
+                .RootElement
+                .EnumerateObject()
+                .ToList()
+                .ForEach(item =>
+                {
+                    dic.TryAdd(item.Name, item.Value.GetString());
+                });
 
             return new ResourceCollection
             {

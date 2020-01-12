@@ -2,7 +2,7 @@
 JSON Localization Resources for ASP.NET Core 2.0 and 3.0
 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://github.com/azhdari/Mohmd.JsonResources/blob/master/License.txt)
-[![NuGet](https://img.shields.io/badge/nuget-1.2.0--preview2-blue.svg?style=flat-square)](https://www.nuget.org/packages/Mohmd.JsonResources/1.2.0-preview2)
+[![NuGet](https://img.shields.io/badge/nuget-1.2.0-blue.svg?style=flat-square)](https://www.nuget.org/packages/Mohmd.JsonResources/1.2.0)
 
 ## Getting Started
 Use these instructions to get the package and use it.
@@ -10,15 +10,15 @@ Use these instructions to get the package and use it.
 ### Install
 From the command prompt
 ```bash
-dotnet add package Mohmd.JsonResources --version 1.2.0-preview2
+dotnet add package Mohmd.JsonResources --version 1.2.0
 ```
 or
 ```bash
-Install-Package Mohmd.JsonResources -Version 1.2.0-preview2
+Install-Package Mohmd.JsonResources -Version 1.2.0
 ```
 or
 ```bash
-paket add Mohmd.JsonResources --version 1.2.0-preview2
+paket add Mohmd.JsonResources --version 1.2.0
 ```
 
 ### Configure
@@ -32,6 +32,7 @@ public void ConfigureServices(IServiceCollection services)
 	options.ResourcesPath = "Resources"; // based on project's root
 	options.GlobalResourceFileName = "global";
 	options.AreasResourcePrefix = "areas";
+        options.SetDefaultCultureCookie = true;
   });
 
   services.AddMvc()

@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Localization;
 using Mohmd.JsonResources.Extensions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 
 namespace Mohmd.JsonResources.Internal
@@ -20,7 +19,7 @@ namespace Mohmd.JsonResources.Internal
     {
         #region Fields
 
-        private readonly ConcurrentDictionary<string, Lazy<JObject>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JObject>>();
+        private readonly ConcurrentDictionary<string, Lazy<JsonDocument>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JsonDocument>>();
         private readonly IEnumerable<string> _resourceFileLocations;
         private readonly JsonGlobalResources _globalResources;
         private readonly RequestCulture _defaultCulture;
@@ -113,12 +112,10 @@ namespace Mohmd.JsonResources.Internal
             do
             {
                 // first try resources per type
-                JToken token = null;
                 var local = GetResourceObject(keyCulture);
-                if (local?.TryGetValue(name, StringComparison.OrdinalIgnoreCase, out token) == true)
+                if (local != null && local.RootElement.TryGetProperty(name, out var token))
                 {
-                    var localized = token.ToString();
-                    return localized;
+                    return token.GetString();
                 }
 
                 string areaName = null;
@@ -159,7 +156,7 @@ namespace Mohmd.JsonResources.Internal
             return null;
         }
 
-        private JObject GetResourceObject(CultureInfo currentCulture)
+        private JsonDocument GetResourceObject(CultureInfo currentCulture)
         {
             if (currentCulture == null)
             {
@@ -174,7 +171,7 @@ namespace Mohmd.JsonResources.Internal
                 cultureSuffix = string.Empty;
             }
 
-            var lazyJObjectGetter = new Lazy<JObject>(
+            var lazyJsonDocumentGetter = new Lazy<JsonDocument>(
                 () =>
                 {
                     // First attempt to find a resource file location that exists.
@@ -198,17 +195,13 @@ namespace Mohmd.JsonResources.Internal
                         return null;
                     }
 
-                    // Found a resource file path: attempt to parse it into a JObject.
+                    // Found a resource file path: attempt to parse it into a JsonDocument.
                     try
                     {
                         var resourceFileStream = new FileStream(resourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
                         using (resourceFileStream)
                         {
-                            var resourceReader = new JsonTextReader(new StreamReader(resourceFileStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true));
-                            using (resourceReader)
-                            {
-                                return JObject.Load(resourceReader);
-                            }
+                            return JsonDocument.Parse(resourceFileStream);
                         }
                     }
                     catch (Exception)
@@ -218,8 +211,8 @@ namespace Mohmd.JsonResources.Internal
                 }, LazyThreadSafetyMode.ExecutionAndPublication);
 
             var cacheKey = string.IsNullOrEmpty(cultureSuffix) ? "default" : cultureSuffix;
-            lazyJObjectGetter = _resourceObjectCache.GetOrAdd(cacheKey, lazyJObjectGetter);
-            var resourceObject = lazyJObjectGetter.Value;
+            lazyJsonDocumentGetter = _resourceObjectCache.GetOrAdd(cacheKey, lazyJsonDocumentGetter);
+            var resourceObject = lazyJsonDocumentGetter.Value;
             return resourceObject;
         }
 
