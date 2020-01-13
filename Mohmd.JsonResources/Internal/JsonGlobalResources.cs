@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 
@@ -219,7 +218,14 @@ namespace Mohmd.JsonResources.Internal
                 .ToList()
                 .ForEach(item =>
                 {
+#if NETSTANDARD2_1
                     dic.TryAdd(item.Name, item.Value.GetString());
+#else
+                    if (!dic.ContainsKey(item.Name))
+                    {
+                        dic.Add(item.Name, item.Value.ToString());
+                    }
+#endif
                 });
 
             return new ResourceCollection
@@ -229,6 +235,6 @@ namespace Mohmd.JsonResources.Internal
             };
         }
 
-        #endregion
+#endregion
     }
 }

@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
+using Mohmd.JsonResources;
 using Mohmd.JsonResources.Extensions;
-using Mohmd.JsonResources.Internal;
 using System;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -26,8 +26,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(services));
             }
 
-            services.TryAdd(new ServiceDescriptor(typeof(IActionContextAccessor), typeof(ActionContextAccessor), ServiceLifetime.Singleton));
-            services.TryAdd(new ServiceDescriptor(typeof(IStringLocalizerFactory), typeof(JsonStringLocalizerFactory), ServiceLifetime.Singleton));
+            services.TryAddSingleton<IActionContextAccessor, ActionContextAccessor>();
+            services.TryAddSingleton<IStringLocalizerFactory, JsonStringLocalizerFactory>();
 
             if (setupAction != null)
             {

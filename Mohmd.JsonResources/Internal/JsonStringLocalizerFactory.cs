@@ -5,13 +5,14 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using Mohmd.JsonResources.Extensions;
+using Mohmd.JsonResources.Internal;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace Mohmd.JsonResources.Internal
+namespace Mohmd.JsonResources
 {
     internal class JsonStringLocalizerFactory : IStringLocalizerFactory
     {
@@ -55,7 +56,7 @@ namespace Mohmd.JsonResources.Internal
 
         #region Methods
 
-        public IStringLocalizer Create(Type resourceSource)
+        public virtual IStringLocalizer Create(Type resourceSource)
         {
             if (resourceSource == null)
             {
@@ -69,14 +70,14 @@ namespace Mohmd.JsonResources.Internal
             return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options));
         }
 
-        public IStringLocalizer Create(string baseName, string location)
+        public virtual IStringLocalizer Create(string baseName, string location)
         {
             if (baseName == null)
             {
                 throw new ArgumentNullException(nameof(baseName));
             }
 
-            location = location ?? _env.ApplicationName;
+            location ??= _env.ApplicationName;
             var resourceBaseName = location + "." + _resourcesRelativePath + "." + LocalizerUtil.TrimPrefix(baseName, location + ".");
 
             var viewExtension = KnownViewExtensions.FirstOrDefault(extension => resourceBaseName.EndsWith(extension));
@@ -88,7 +89,7 @@ namespace Mohmd.JsonResources.Internal
             return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options));
         }
 
-        public void ClearCache()
+        public virtual void ClearCache()
         {
             _globalResources.ClearCache();
             _localizerCache.Clear();
