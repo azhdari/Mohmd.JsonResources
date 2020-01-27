@@ -21,6 +21,7 @@ namespace Mohmd.JsonResources.Example.Controllers
 
         public IActionResult Index()
         {
+            var text = _localizer["website.title"].Value;
             return View();
         }
 

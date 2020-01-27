@@ -20,7 +20,7 @@ namespace Mohmd.JsonResources
 
         private static readonly string[] KnownViewExtensions = new[] { ".cshtml" };
 
-        private readonly ConcurrentDictionary<string, JsonStringLocalizer> _localizerCache = new ConcurrentDictionary<string, JsonStringLocalizer>();
+        private readonly ConcurrentDictionary<string, IStringLocalizer> _localizerCache = new ConcurrentDictionary<string, IStringLocalizer>();
         private readonly IHostingEnvironment _env;
         private readonly string _resourcesRelativePath;
         private readonly JsonGlobalResources _globalResources;
@@ -67,7 +67,9 @@ namespace Mohmd.JsonResources
 
             // Re-root the base name if a resources path is set.
             var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? typeInfo.FullName : _env.ApplicationName + "." + _resourcesRelativePath + "." + LocalizerUtil.TrimPrefix(typeInfo.FullName, _env.ApplicationName + ".");
-            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options));
+
+            Type localizerType = typeof(JsonStringLocalizer<>).MakeGenericType(resourceSource);
+            return _localizerCache.GetOrAdd(resourceBaseName, str => Activator.CreateInstance(localizerType, resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options) as IStringLocalizer);
         }
 
         public virtual IStringLocalizer Create(string baseName, string location)

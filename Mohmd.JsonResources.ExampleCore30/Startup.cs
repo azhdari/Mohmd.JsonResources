@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 
 namespace Mohmd.JsonResources.ExampleCore30
@@ -44,6 +45,7 @@ namespace Mohmd.JsonResources.ExampleCore30
                 options.SupportedUICultures = supportedCultures;
             });
 
+            services.AddScoped(typeof(IStringLocalizer<>), typeof(CustomStringLocalizer<>));
             services.AddJsonLocalization(options =>
             {
                 options.ResourcesPath = "Resources";
