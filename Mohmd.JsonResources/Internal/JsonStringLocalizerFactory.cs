@@ -65,8 +65,7 @@ namespace Mohmd.JsonResources
 
             var typeInfo = resourceSource.GetTypeInfo();
 
-            // Re-root the base name if a resources path is set.
-            var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? typeInfo.FullName : _env.ApplicationName + "." + _resourcesRelativePath + "." + LocalizerUtil.TrimPrefix(typeInfo.FullName, _env.ApplicationName + ".");
+            var resourceBaseName = typeInfo.FullName;
 
             Type localizerType = typeof(JsonStringLocalizer<>).MakeGenericType(resourceSource);
             return _localizerCache.GetOrAdd(resourceBaseName, str => Activator.CreateInstance(localizerType, resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options) as IStringLocalizer);
@@ -79,8 +78,9 @@ namespace Mohmd.JsonResources
                 throw new ArgumentNullException(nameof(baseName));
             }
 
-            location ??= _env.ApplicationName;
-            var resourceBaseName = location + "." + _resourcesRelativePath + "." + LocalizerUtil.TrimPrefix(baseName, location + ".");
+            location ??= string.Empty;
+            var resourceBaseName = location + "." + LocalizerUtil.TrimPrefix(baseName, location + ".");
+            resourceBaseName = resourceBaseName.TrimStart('.');
 
             var viewExtension = KnownViewExtensions.FirstOrDefault(extension => resourceBaseName.EndsWith(extension));
             if (viewExtension != null)

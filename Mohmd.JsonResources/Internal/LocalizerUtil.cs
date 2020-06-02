@@ -48,7 +48,7 @@ namespace Mohmd.JsonResources.Internal
             return name;
         }
 
-        public static IEnumerable<string> ExpandPaths(string name, string baseName)
+        public static IEnumerable<string> ExpandPaths(string name, string baseName = "")
         {
             if (name == null)
             {

@@ -22,6 +22,7 @@ namespace Mohmd.JsonResources.Internal
         private readonly IHostingEnvironment _env;
         private readonly IActionContextAccessor _actionContextAccessor;
         private readonly JsonLocalizationOptions _options;
+        private readonly string _resourcesRelativePath;
 
         #endregion
 
@@ -41,7 +42,13 @@ namespace Mohmd.JsonResources.Internal
             DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
             _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
 
-            ResourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _env.ApplicationName).ToList();
+            _resourcesRelativePath = _options.ResourcesPath ?? string.Empty;
+            if (!string.IsNullOrEmpty(_resourcesRelativePath))
+            {
+                _resourcesRelativePath = _resourcesRelativePath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
+            }
+
+            ResourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName).ToList();
         }
 
         #endregion
@@ -195,12 +202,20 @@ namespace Mohmd.JsonResources.Internal
             var lazyJsonDocumentGetter = new Lazy<JsonDocument>(
                 () =>
                 {
+                    string root = _env.ContentRootPath;
+
+                    if (!string.IsNullOrEmpty(_resourcesRelativePath))
+                    {
+                        root = Path.Combine(root, _resourcesRelativePath.Trim('/', '\\'));
+                    }
+
                     // First attempt to find a resource file location that exists.
                     string resourcePath = null;
                     foreach (var resourceFileLocation in ResourceFileLocations)
                     {
                         resourcePath = resourceFileLocation + cultureSuffix + ".json";
-                        resourcePath = Path.Combine(_env.ContentRootPath, resourcePath);
+                        resourcePath = Path.Combine(root, resourcePath);
+
                         if (File.Exists(resourcePath))
                         {
                             break;

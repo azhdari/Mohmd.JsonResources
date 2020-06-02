@@ -117,13 +117,22 @@ namespace Mohmd.JsonResources.Internal
             var lazyJObjectGetter = new Lazy<JsonDocument>(
                 () =>
                 {
-                    var resourceBaseName = string.IsNullOrEmpty(ResourceRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + ResourceRelativePath + "." + GlobalName;
+                    string root = _app.ContentRootPath;
+
+                    if (!string.IsNullOrEmpty(ResourceRelativePath))
+                    {
+                        root = Path.Combine(root, ResourceRelativePath.Trim('/', '\\'));
+                    }
+
+                    var resourceBaseName = GlobalName;
                     var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
                     string resourcePath = null;
                     foreach (var resourceFileLocation in resourceFileLocations)
                     {
                         resourcePath = resourceFileLocation + cultureSuffix + ".json";
+                        resourcePath = Path.Combine(root, resourcePath);
+
                         if (File.Exists(resourcePath))
                         {
                             break;
@@ -180,13 +189,22 @@ namespace Mohmd.JsonResources.Internal
             var lazyJObjectGetter = new Lazy<JsonDocument>(
                 () =>
                 {
-                    var resourceBaseName = string.IsNullOrEmpty(ResourceRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + ResourceRelativePath + "." + AreaName;
+                    string root = _app.ContentRootPath;
+
+                    if (!string.IsNullOrEmpty(ResourceRelativePath))
+                    {
+                        root = Path.Combine(root, ResourceRelativePath.Trim('/', '\\'));
+                    }
+
+                    var resourceBaseName = AreaName;
                     var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
                     string resourcePath = null;
                     foreach (var resourceFileLocation in resourceFileLocations)
                     {
                         resourcePath = resourceFileLocation + areaSuffix + cultureSuffix + ".json";
+                        resourcePath = Path.Combine(root, resourcePath);
+
                         if (File.Exists(resourcePath))
                         {
                             break;
