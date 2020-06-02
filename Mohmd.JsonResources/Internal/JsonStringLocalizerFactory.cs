@@ -21,7 +21,7 @@ namespace Mohmd.JsonResources
 
         private static readonly string[] KnownViewExtensions = new[] { ".cshtml" };
 
-        private readonly ConcurrentDictionary<string, IStringLocalizer> _localizerCache = new ConcurrentDictionary<string, IStringLocalizer>();
+        private static readonly ConcurrentDictionary<string, IStringLocalizer> _localizerCache = new ConcurrentDictionary<string, IStringLocalizer>();
         private readonly IHostingEnvironment _env;
         private readonly string _resourcesRelativePath;
         private readonly JsonGlobalResources _globalResources;
