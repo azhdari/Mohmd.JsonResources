@@ -68,12 +68,22 @@ namespace Mohmd.JsonResources.Internal
                 cultureSuffix = string.Empty;
             }
 
-            var resourceBaseName = string.IsNullOrEmpty(ResourceRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + ResourceRelativePath + "." + GlobalName;
+            var cacheName = "global";
+            cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
+
+            string root = _app.ContentRootPath;
+
+            if (!string.IsNullOrEmpty(ResourceRelativePath))
+            {
+                root = Path.Combine(root, ResourceRelativePath.Trim('/', '\\'));
+            }
+
+            var resourceBaseName = GlobalName;
             var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
-            resourceFileLocations = resourceFileLocations.Select(str => str + cultureSuffix + ".json").ToList();
-
-            return resourceFileLocations.ToArray();
+            return resourceFileLocations.Select(resourceFileLocation => resourceFileLocation + cultureSuffix + ".json")
+                                        .Select(resourcePath => Path.Combine(root, resourcePath))
+                                        .ToArray();
         }
 
         public string[] GetAreaFileLocations(CultureInfo culture, string areaName)
@@ -93,12 +103,22 @@ namespace Mohmd.JsonResources.Internal
 
             var areaSuffix = $".{areaName}";
 
-            var resourceBaseName = string.IsNullOrEmpty(ResourceRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + ResourceRelativePath + "." + AreaName;
+            var cacheName = $"{AreaName}{areaSuffix}";
+            cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
+
+            string root = _app.ContentRootPath;
+
+            if (!string.IsNullOrEmpty(ResourceRelativePath))
+            {
+                root = Path.Combine(root, ResourceRelativePath.Trim('/', '\\'));
+            }
+
+            var resourceBaseName = AreaName;
             var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
-            resourceFileLocations = resourceFileLocations.Select(str => str + areaSuffix + cultureSuffix + ".json").ToList();
-
-            return resourceFileLocations.ToArray();
+            return resourceFileLocations.Select(resourceFileLocation => resourceFileLocation + areaSuffix + cultureSuffix + ".json")
+                                        .Select(resourcePath => Path.Combine(root, resourcePath))
+                                        .ToArray();
         }
 
         public JsonDocument GetGlobalResources(CultureInfo culture)

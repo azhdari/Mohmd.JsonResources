@@ -59,6 +59,8 @@ namespace Mohmd.JsonResources.Internal
         {
             get
             {
+                _ = GlobalFileLocations;
+
                 if (string.IsNullOrEmpty(name))
                 {
                     throw new ArgumentNullException(nameof(name));
