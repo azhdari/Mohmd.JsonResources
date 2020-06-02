@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mohmd.JsonResources.Extensions;
 using Mohmd.JsonResources.Internal;
@@ -27,6 +28,7 @@ namespace Mohmd.JsonResources
         private readonly RequestCulture _defaultCulture;
         private readonly IActionContextAccessor _actionContextAccessor;
         private readonly JsonLocalizationOptions _options;
+        private readonly ILoggerFactory _loggerFactory;
 
         #endregion
 
@@ -36,12 +38,14 @@ namespace Mohmd.JsonResources
             IHostingEnvironment hostingEnvironment,
             IOptions<JsonLocalizationOptions> options,
             IOptions<RequestLocalizationOptions> requestLocalizationOptions,
-            IActionContextAccessor actionContextAccessor)
+            IActionContextAccessor actionContextAccessor,
+            ILoggerFactory loggerFactory)
         {
             _options = options.Value;
             _env = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
             _defaultCulture = requestLocalizationOptions.Value.DefaultRequestCulture;
             _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
+            _loggerFactory = loggerFactory;
 
             _resourcesRelativePath = _options.ResourcesPath ?? string.Empty;
             if (!string.IsNullOrEmpty(_resourcesRelativePath))
@@ -49,7 +53,7 @@ namespace Mohmd.JsonResources
                 _resourcesRelativePath = _resourcesRelativePath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
             }
 
-            _globalResources = new JsonGlobalResources(hostingEnvironment, options, _defaultCulture);
+            _globalResources = new JsonGlobalResources(hostingEnvironment, options, _defaultCulture, _loggerFactory);
         }
 
         #endregion
@@ -68,7 +72,8 @@ namespace Mohmd.JsonResources
             var resourceBaseName = typeInfo.FullName;
 
             Type localizerType = typeof(JsonStringLocalizer<>).MakeGenericType(resourceSource);
-            return _localizerCache.GetOrAdd(resourceBaseName, str => Activator.CreateInstance(localizerType, resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options) as IStringLocalizer);
+
+            return _localizerCache.GetOrAdd(resourceBaseName, str => Activator.CreateInstance(localizerType, resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options, _loggerFactory) as IStringLocalizer);
         }
 
         public virtual IStringLocalizer Create(string baseName, string location)
@@ -88,7 +93,7 @@ namespace Mohmd.JsonResources
                 resourceBaseName = resourceBaseName.Substring(0, resourceBaseName.Length - viewExtension.Length);
             }
 
-            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options));
+            return _localizerCache.GetOrAdd(resourceBaseName, new JsonStringLocalizer(resourceBaseName, _env, _globalResources, _defaultCulture, _actionContextAccessor, _options, _loggerFactory));
         }
 
         public virtual void ClearCache()

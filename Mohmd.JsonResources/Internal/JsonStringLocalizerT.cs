@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using Mohmd.JsonResources.Extensions;
 using System;
 using System.Collections.Concurrent;
@@ -23,6 +24,7 @@ namespace Mohmd.JsonResources.Internal
         private readonly IActionContextAccessor _actionContextAccessor;
         private readonly JsonLocalizationOptions _options;
         private readonly string _resourcesRelativePath;
+        private readonly ILogger _logger;
 
         #endregion
 
@@ -34,13 +36,15 @@ namespace Mohmd.JsonResources.Internal
             JsonGlobalResources globalResources,
             RequestCulture defaultCulture,
             IActionContextAccessor actionContextAccessor,
-            JsonLocalizationOptions options)
+            JsonLocalizationOptions options,
+            ILoggerFactory loggerFactory)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _env = env ?? throw new ArgumentNullException(nameof(env));
             GlobalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
             DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
             _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
+            _logger = loggerFactory.CreateLogger<JsonStringLocalizer<T>>();
 
             _resourcesRelativePath = _options.ResourcesPath ?? string.Empty;
             if (!string.IsNullOrEmpty(_resourcesRelativePath))
@@ -59,8 +63,6 @@ namespace Mohmd.JsonResources.Internal
         {
             get
             {
-                _ = GlobalFileLocations;
-
                 if (string.IsNullOrEmpty(name))
                 {
                     throw new ArgumentNullException(nameof(name));
@@ -161,19 +163,20 @@ namespace Mohmd.JsonResources.Internal
                 string areaName = FindCurrentContextAreaName();
 
                 List<ResourceCollection> resourceCollections = GlobalResources.GetResources(keyCulture, areaName);
-                List<KeyValuePair<string, string>> flatResources = resourceCollections
-                    .SelectMany(x => x.Resources)
-                    .ToList();
+                List<KeyValuePair<string, string>> flatResources = resourceCollections.SelectMany(x => x.Resources)
+                                                                                      .ToList();
 
                 // if not found, then try find the name in area resources (if available)
                 // if not found, then try find the name in global resources
                 if (flatResources.Any(x => x.Key?.Normalize().ToUpperInvariant() == name?.Normalize().ToUpperInvariant()))
                 {
-                    return resourceCollections
-                        .SelectMany(x => x.Resources)
-                        .Where(x => x.Key?.Normalize().ToUpperInvariant() == name?.Normalize().ToUpperInvariant())
-                        .First()
-                        .Value;
+                    return resourceCollections.SelectMany(x => x.Resources)
+                                              .Where(x => x.Key?.Normalize().ToUpperInvariant() == name?.Normalize().ToUpperInvariant())
+                                              .First().Value;
+                }
+                else
+                {
+                    _logger.LogDebug_Localizer($"Resource key {name} not found in {flatResources.Count}.");
                 }
 
                 // Consult parent culture.
@@ -201,15 +204,21 @@ namespace Mohmd.JsonResources.Internal
                 cultureSuffix = string.Empty;
             }
 
+            var cacheKey = string.IsNullOrEmpty(cultureSuffix) ? "default" : cultureSuffix;
+
             var lazyJsonDocumentGetter = new Lazy<JsonDocument>(
                 () =>
                 {
+                    _logger.LogDebug_Localizer($"Resource file content not found in cache ({cacheKey}), try to load from file.");
+
                     string root = _env.ContentRootPath;
 
                     if (!string.IsNullOrEmpty(_resourcesRelativePath))
                     {
                         root = Path.Combine(root, _resourcesRelativePath.Trim('/', '\\'));
                     }
+
+                    _logger.LogDebug_Localizer($"Looking for resource files in {root}");
 
                     // First attempt to find a resource file location that exists.
                     string resourcePath = null;
@@ -220,16 +229,19 @@ namespace Mohmd.JsonResources.Internal
 
                         if (File.Exists(resourcePath))
                         {
+                            _logger.LogDebug_Localizer($"Resource file found: {resourcePath}");
                             break;
                         }
                         else
                         {
+                            _logger.LogDebug_Localizer($"Resource file not found: {resourcePath}");
                             resourcePath = null;
                         }
                     }
 
                     if (resourcePath == null)
                     {
+                        _logger.LogWarning_Localizer($"There is no resource file found for {cacheKey}");
                         return null;
                     }
 
@@ -239,16 +251,22 @@ namespace Mohmd.JsonResources.Internal
                         var resourceFileStream = new FileStream(resourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
                         using (resourceFileStream)
                         {
-                            return JsonDocument.Parse(resourceFileStream);
+                            var content = JsonDocument.Parse(resourceFileStream);
+
+                            _logger.LogInformation_Localizer($"Resource file content loaded: {resourcePath}");
+
+                            return content;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        _logger.LogError_Localizer(ex, $"Error while loading resource file: {ex.Message} ({resourcePath})");
                         return null;
                     }
                 }, LazyThreadSafetyMode.ExecutionAndPublication);
 
-            var cacheKey = string.IsNullOrEmpty(cultureSuffix) ? "default" : cultureSuffix;
+            _logger.LogInformation_Localizer($"Trying to load resource file content from cache {cacheKey}.");
+
             lazyJsonDocumentGetter = _resourceObjectCache.GetOrAdd(cacheKey, lazyJsonDocumentGetter);
             var resourceObject = lazyJsonDocumentGetter.Value;
             return resourceObject;

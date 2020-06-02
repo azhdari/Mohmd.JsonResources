@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mohmd.JsonResources.Extensions;
 using System;
@@ -20,12 +21,16 @@ namespace Mohmd.JsonResources.Internal
         private readonly ConcurrentDictionary<string, Lazy<JsonDocument>> _resources = new ConcurrentDictionary<string, Lazy<JsonDocument>>();
         private readonly IHostingEnvironment _app;
         private readonly JsonLocalizationOptions _options;
+        private readonly ILogger _logger;
 
         #endregion
 
         #region Constructors
 
-        public JsonGlobalResources(IHostingEnvironment hostingEnvironment, IOptions<JsonLocalizationOptions> options, RequestCulture defaultCulture)
+        public JsonGlobalResources(IHostingEnvironment hostingEnvironment,
+                                   IOptions<JsonLocalizationOptions> options,
+                                   RequestCulture defaultCulture,
+                                   ILoggerFactory loggerFactory)
         {
             if (options == null)
             {
@@ -37,6 +42,7 @@ namespace Mohmd.JsonResources.Internal
             GlobalName = _options.GlobalResourceFileName ?? "global";
             AreaName = _options.AreasResourcePrefix ?? "areas";
             DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+            _logger = loggerFactory.CreateLogger<JsonGlobalResources>();
 
             ResourceRelativePath = _options.ResourcesPath ?? string.Empty;
             if (!string.IsNullOrEmpty(ResourceRelativePath))
@@ -121,6 +127,8 @@ namespace Mohmd.JsonResources.Internal
                                         .ToArray();
         }
 
+        //
+
         public JsonDocument GetGlobalResources(CultureInfo culture)
         {
             var cultureSuffix = "." + culture.Name;
@@ -134,15 +142,18 @@ namespace Mohmd.JsonResources.Internal
             var cacheName = "global";
             cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
 
-            var lazyJObjectGetter = new Lazy<JsonDocument>(
-                () =>
+            var lazyJObjectGetter = new Lazy<JsonDocument>(() =>
                 {
+                    _logger.LogDebug_Localizer($"Resource file content not found in cache ({cacheName}), try to load from file.");
+
                     string root = _app.ContentRootPath;
 
                     if (!string.IsNullOrEmpty(ResourceRelativePath))
                     {
                         root = Path.Combine(root, ResourceRelativePath.Trim('/', '\\'));
                     }
+
+                    _logger.LogDebug_Localizer($"Looking for resource files in {root}");
 
                     var resourceBaseName = GlobalName;
                     var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
@@ -155,16 +166,19 @@ namespace Mohmd.JsonResources.Internal
 
                         if (File.Exists(resourcePath))
                         {
+                            _logger.LogDebug_Localizer($"Resource file found: {resourcePath}");
                             break;
                         }
                         else
                         {
+                            _logger.LogDebug_Localizer($"Resource file not found: {resourcePath}");
                             resourcePath = null;
                         }
                     }
 
                     if (resourcePath == null)
                     {
+                        _logger.LogWarning_Localizer($"There is no resource file found for {resourceBaseName}");
                         return null;
                     }
 
@@ -173,14 +187,21 @@ namespace Mohmd.JsonResources.Internal
                         var resourceFileStream = new FileStream(resourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
                         using (resourceFileStream)
                         {
-                            return JsonDocument.Parse(resourceFileStream);
+                            var content = JsonDocument.Parse(resourceFileStream);
+
+                            _logger.LogInformation_Localizer($"Resource file content loaded: {resourcePath}");
+
+                            return content;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        _logger.LogError_Localizer(ex, $"Error while loading resource file: {ex.Message} ({resourcePath})");
                         return null;
                     }
                 }, LazyThreadSafetyMode.ExecutionAndPublication);
+
+            _logger.LogInformation_Localizer($"Trying to load resource file content from cache {cacheName}.");
 
             lazyJObjectGetter = _resources.GetOrAdd(cacheName, lazyJObjectGetter);
             return lazyJObjectGetter.Value;
@@ -209,12 +230,16 @@ namespace Mohmd.JsonResources.Internal
             var lazyJObjectGetter = new Lazy<JsonDocument>(
                 () =>
                 {
+                    _logger.LogDebug_Localizer($"Resource file content not found in cache ({cacheName}), try to load from file.");
+
                     string root = _app.ContentRootPath;
 
                     if (!string.IsNullOrEmpty(ResourceRelativePath))
                     {
                         root = Path.Combine(root, ResourceRelativePath.Trim('/', '\\'));
                     }
+
+                    _logger.LogDebug_Localizer($"Looking for resource files in {root}");
 
                     var resourceBaseName = AreaName;
                     var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
@@ -227,16 +252,19 @@ namespace Mohmd.JsonResources.Internal
 
                         if (File.Exists(resourcePath))
                         {
+                            _logger.LogDebug_Localizer($"Resource file found: {resourcePath}");
                             break;
                         }
                         else
                         {
+                            _logger.LogDebug_Localizer($"Resource file not found: {resourcePath}");
                             resourcePath = null;
                         }
                     }
 
                     if (resourcePath == null)
                     {
+                        _logger.LogWarning_Localizer($"There is no resource file found for {resourceBaseName}");
                         return null;
                     }
 
@@ -245,14 +273,21 @@ namespace Mohmd.JsonResources.Internal
                         var resourceFileStream = new FileStream(resourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
                         using (resourceFileStream)
                         {
-                            return JsonDocument.Parse(resourceFileStream);
+                            var content = JsonDocument.Parse(resourceFileStream);
+
+                            _logger.LogInformation_Localizer($"Resource file content loaded: {resourcePath}");
+
+                            return content;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        _logger.LogError_Localizer(ex, $"Error while loading resource file: {ex.Message} ({resourcePath})");
                         return null;
                     }
                 }, LazyThreadSafetyMode.ExecutionAndPublication);
+
+            _logger.LogInformation_Localizer($"Trying to load resource file content from cache {cacheName}.");
 
             lazyJObjectGetter = _resources.GetOrAdd(cacheName, lazyJObjectGetter);
             return lazyJObjectGetter.Value;
@@ -313,6 +348,8 @@ namespace Mohmd.JsonResources.Internal
                     }
 #endif
                 });
+
+            _logger.LogInformation_Localizer($"{dic.Count} resource keys loaded for {locale}");
 
             return new ResourceCollection
             {
