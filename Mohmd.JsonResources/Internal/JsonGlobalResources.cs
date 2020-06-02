@@ -19,10 +19,6 @@ namespace Mohmd.JsonResources.Internal
 
         private readonly ConcurrentDictionary<string, Lazy<JsonDocument>> _resources = new ConcurrentDictionary<string, Lazy<JsonDocument>>();
         private readonly IHostingEnvironment _app;
-        private readonly string _resourcesRelativePath;
-        private readonly string _globalName;
-        private readonly string _areaName;
-        private readonly RequestCulture _defaultCulture;
         private readonly JsonLocalizationOptions _options;
 
         #endregion
@@ -38,16 +34,25 @@ namespace Mohmd.JsonResources.Internal
 
             _options = options.Value;
             _app = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
-            _globalName = _options.GlobalResourceFileName ?? "global";
-            _areaName = _options.AreasResourcePrefix ?? "areas";
-            _defaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+            GlobalName = _options.GlobalResourceFileName ?? "global";
+            AreaName = _options.AreasResourcePrefix ?? "areas";
+            DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
 
-            _resourcesRelativePath = _options.ResourcesPath ?? string.Empty;
-            if (!string.IsNullOrEmpty(_resourcesRelativePath))
+            ResourceRelativePath = _options.ResourcesPath ?? string.Empty;
+            if (!string.IsNullOrEmpty(ResourceRelativePath))
             {
-                _resourcesRelativePath = _resourcesRelativePath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
+                ResourceRelativePath = ResourceRelativePath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
             }
         }
+
+        #endregion
+
+        #region Properties
+
+        public RequestCulture DefaultCulture { get; private set; }
+        public string ResourceRelativePath { get; private set; }
+        public string GlobalName { get; private set; }
+        public string AreaName { get; private set; }
 
         #endregion
 
@@ -58,12 +63,12 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(_defaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, _defaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture.UICulture))
             {
                 cultureSuffix = string.Empty;
             }
 
-            var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + _resourcesRelativePath + "." + _globalName;
+            var resourceBaseName = string.IsNullOrEmpty(ResourceRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + ResourceRelativePath + "." + GlobalName;
             var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
             resourceFileLocations = resourceFileLocations.Select(str => str + cultureSuffix + ".json").ToList();
@@ -81,14 +86,14 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(_defaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, _defaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture.UICulture))
             {
                 cultureSuffix = string.Empty;
             }
 
             var areaSuffix = $".{areaName}";
 
-            var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + _resourcesRelativePath + "." + _areaName;
+            var resourceBaseName = string.IsNullOrEmpty(ResourceRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + ResourceRelativePath + "." + AreaName;
             var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
             resourceFileLocations = resourceFileLocations.Select(str => str + areaSuffix + cultureSuffix + ".json").ToList();
@@ -101,7 +106,7 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(_defaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, _defaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture.UICulture))
             {
                 cultureSuffix = string.Empty;
             }
@@ -112,7 +117,7 @@ namespace Mohmd.JsonResources.Internal
             var lazyJObjectGetter = new Lazy<JsonDocument>(
                 () =>
                 {
-                    var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + _resourcesRelativePath + "." + _globalName;
+                    var resourceBaseName = string.IsNullOrEmpty(ResourceRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + ResourceRelativePath + "." + GlobalName;
                     var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
                     string resourcePath = null;
@@ -162,20 +167,20 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(_defaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, _defaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture.UICulture))
             {
                 cultureSuffix = string.Empty;
             }
 
             var areaSuffix = $".{areaName}";
 
-            var cacheName = $"{_areaName}{areaSuffix}";
+            var cacheName = $"{AreaName}{areaSuffix}";
             cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
 
             var lazyJObjectGetter = new Lazy<JsonDocument>(
                 () =>
                 {
-                    var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + _resourcesRelativePath + "." + _areaName;
+                    var resourceBaseName = string.IsNullOrEmpty(ResourceRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + ResourceRelativePath + "." + AreaName;
                     var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
                     string resourcePath = null;
