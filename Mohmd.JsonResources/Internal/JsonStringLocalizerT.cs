@@ -19,9 +19,6 @@ namespace Mohmd.JsonResources.Internal
         #region Fields
 
         private readonly ConcurrentDictionary<string, Lazy<JsonDocument>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JsonDocument>>();
-        private readonly IEnumerable<string> _resourceFileLocations;
-        private readonly JsonGlobalResources _globalResources;
-        private readonly RequestCulture _defaultCulture;
         private readonly IHostingEnvironment _env;
         private readonly IActionContextAccessor _actionContextAccessor;
         private readonly JsonLocalizationOptions _options;
@@ -40,11 +37,11 @@ namespace Mohmd.JsonResources.Internal
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _env = env ?? throw new ArgumentNullException(nameof(env));
-            _globalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
-            _defaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+            GlobalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
+            DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
             _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
 
-            _resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _env.ApplicationName).ToList();
+            ResourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _env.ApplicationName).ToList();
         }
 
         #endregion
@@ -60,7 +57,7 @@ namespace Mohmd.JsonResources.Internal
                     throw new ArgumentNullException(nameof(name));
                 }
 
-                var value = GetStringSafely(name, null);
+                var value = GetStringSafely(name);
                 return new LocalizedString(name, value ?? name, resourceNotFound: value == null);
             }
         }
@@ -74,9 +71,44 @@ namespace Mohmd.JsonResources.Internal
                     throw new ArgumentNullException(nameof(name));
                 }
 
-                var format = GetStringSafely(name, null);
+                var format = GetStringSafely(name);
                 var value = string.Format(format ?? name, arguments);
                 return new LocalizedString(name, value, resourceNotFound: format == null);
+            }
+        }
+
+        #endregion
+
+        #region Properties
+
+        public RequestCulture DefaultCulture { get; private set; }
+        public JsonGlobalResources GlobalResources { get; private set; }
+        public IEnumerable<string> ResourceFileLocations { get; private set; }
+
+        public string[] GlobalFileLocations
+        {
+            get
+            {
+                var culture = CultureInfo.CurrentUICulture;
+                return GlobalResources.GetGlobalFileLocations(culture);
+            }
+        }
+
+        public string[] AreaFileLocations
+        {
+            get
+            {
+                var culture = CultureInfo.CurrentUICulture;
+                string areaName = FindCurrentContextAreaName();
+
+                if (!string.IsNullOrEmpty(areaName))
+                {
+                    return GlobalResources.GetAreaFileLocations(culture, areaName);
+                }
+                else
+                {
+                    return new string[0];
+                }
             }
         }
 
@@ -98,14 +130,14 @@ namespace Mohmd.JsonResources.Internal
 
         #region Utilites
 
-        private string GetStringSafely(string name, CultureInfo culture)
+        private string GetStringSafely(string name)
         {
             if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            var keyCulture = culture ?? CultureInfo.CurrentUICulture;
+            var keyCulture = CultureInfo.CurrentUICulture;
             var currentCulture = keyCulture;
             CultureInfo previousCulture = null;
             do
@@ -117,19 +149,9 @@ namespace Mohmd.JsonResources.Internal
                     return token.GetString();
                 }
 
-                string areaName = null;
+                string areaName = FindCurrentContextAreaName();
 
-                object obj = default;
-                if (_actionContextAccessor.ActionContext?.RouteData.Values.TryGetValue("area", out obj) == true)
-                {
-                    areaName = obj?.ToString();
-                    if (string.IsNullOrEmpty(areaName?.ToString()))
-                    {
-                        areaName = null;
-                    }
-                }
-
-                List<ResourceCollection> resourceCollections = _globalResources.GetResources(keyCulture, areaName);
+                List<ResourceCollection> resourceCollections = GlobalResources.GetResources(keyCulture, areaName);
                 List<KeyValuePair<string, string>> flatResources = resourceCollections
                     .SelectMany(x => x.Resources)
                     .ToList();
@@ -165,7 +187,7 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + currentCulture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(_defaultCulture.UICulture, currentCulture) || LocalizerUtil.IsChildCulture(currentCulture, _defaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, currentCulture) || LocalizerUtil.IsChildCulture(currentCulture, DefaultCulture.UICulture))
             {
                 cultureSuffix = string.Empty;
             }
@@ -175,7 +197,7 @@ namespace Mohmd.JsonResources.Internal
                 {
                     // First attempt to find a resource file location that exists.
                     string resourcePath = null;
-                    foreach (var resourceFileLocation in _resourceFileLocations)
+                    foreach (var resourceFileLocation in ResourceFileLocations)
                     {
                         resourcePath = resourceFileLocation + cultureSuffix + ".json";
                         resourcePath = Path.Combine(_env.ContentRootPath, resourcePath);
@@ -213,6 +235,23 @@ namespace Mohmd.JsonResources.Internal
             lazyJsonDocumentGetter = _resourceObjectCache.GetOrAdd(cacheKey, lazyJsonDocumentGetter);
             var resourceObject = lazyJsonDocumentGetter.Value;
             return resourceObject;
+        }
+
+        private string FindCurrentContextAreaName()
+        {
+            string areaName = null;
+
+            object obj = default;
+            if (_actionContextAccessor.ActionContext?.RouteData.Values.TryGetValue("area", out obj) == true)
+            {
+                areaName = obj?.ToString();
+                if (string.IsNullOrEmpty(areaName?.ToString()))
+                {
+                    areaName = null;
+                }
+            }
+
+            return areaName;
         }
 
         #endregion

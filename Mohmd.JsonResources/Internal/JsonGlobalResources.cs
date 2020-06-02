@@ -53,6 +53,49 @@ namespace Mohmd.JsonResources.Internal
 
         #region Methods
 
+        public string[] GetGlobalFileLocations(CultureInfo culture)
+        {
+            var cultureSuffix = "." + culture.Name;
+            cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
+
+            if (LocalizerUtil.IsChildCulture(_defaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, _defaultCulture.UICulture))
+            {
+                cultureSuffix = string.Empty;
+            }
+
+            var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + _resourcesRelativePath + "." + _globalName;
+            var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
+
+            resourceFileLocations = resourceFileLocations.Select(str => str + cultureSuffix + ".json").ToList();
+
+            return resourceFileLocations.ToArray();
+        }
+
+        public string[] GetAreaFileLocations(CultureInfo culture, string areaName)
+        {
+            if (string.IsNullOrEmpty(areaName?.Trim()))
+            {
+                throw new ArgumentNullException(nameof(areaName));
+            }
+
+            var cultureSuffix = "." + culture.Name;
+            cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
+
+            if (LocalizerUtil.IsChildCulture(_defaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, _defaultCulture.UICulture))
+            {
+                cultureSuffix = string.Empty;
+            }
+
+            var areaSuffix = $".{areaName}";
+
+            var resourceBaseName = string.IsNullOrEmpty(_resourcesRelativePath) ? _app.ApplicationName : _app.ApplicationName + "." + _resourcesRelativePath + "." + _areaName;
+            var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
+
+            resourceFileLocations = resourceFileLocations.Select(str => str + areaSuffix + cultureSuffix + ".json").ToList();
+
+            return resourceFileLocations.ToArray();
+        }
+
         public JsonDocument GetGlobalResources(CultureInfo culture)
         {
             var cultureSuffix = "." + culture.Name;
