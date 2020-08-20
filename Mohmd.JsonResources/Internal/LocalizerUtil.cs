@@ -11,7 +11,7 @@ namespace Mohmd.JsonResources.Internal
         public static bool IsChildCulture(CultureInfo parent, CultureInfo child)
         {
             var currentCulture = child;
-            CultureInfo previousCulture = null;
+            CultureInfo? previousCulture = null;
             do
             {
                 if (parent.Name == currentCulture.Name)

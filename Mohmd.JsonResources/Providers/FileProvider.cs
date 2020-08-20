@@ -1,9 +1,8 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Localization;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.Extensions.Localization;
+﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Mohmd.JsonResources.Extensions;
+using Mohmd.JsonResources.Internal;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,144 +12,36 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 
-namespace Mohmd.JsonResources.Internal
+namespace Mohmd.JsonResources.Providers
 {
-    internal class JsonStringLocalizer<T> : IStringLocalizer<T>
+    public class FileProvider : IJsonResourceProvider
     {
-        #region Fields
-
-        private readonly ConcurrentDictionary<string, Lazy<JsonDocument>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JsonDocument>>();
+        private readonly ILogger _logger;
         private readonly IHostingEnvironment _env;
         private readonly IActionContextAccessor _actionContextAccessor;
         private readonly JsonLocalizationOptions _options;
         private readonly string _resourcesRelativePath;
-        private readonly ILogger _logger;
+        private readonly ConcurrentDictionary<string, Lazy<JsonDocument?>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JsonDocument?>>();
+        private readonly JsonGlobalResources _globalResources;
 
-        #endregion
-
-        #region Constructors
-
-        public JsonStringLocalizer(
-            string resourceBaseName,
-            IHostingEnvironment env,
-            JsonGlobalResources globalResources,
-            RequestCulture defaultCulture,
-            IActionContextAccessor actionContextAccessor,
-            JsonLocalizationOptions options,
-            ILoggerFactory loggerFactory)
+        public FileProvider(string resourceBaseName, ILoggerFactory loggerFactory, IHostingEnvironment env, IActionContextAccessor actionContextAccessor, JsonLocalizationOptions options)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
-            _env = env ?? throw new ArgumentNullException(nameof(env));
-            GlobalResources = globalResources ?? throw new ArgumentNullException(nameof(globalResources));
-            DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
-            _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
-            _logger = loggerFactory.CreateLogger<JsonStringLocalizer<T>>();
-
-            _resourcesRelativePath = _options.ResourcesPath ?? string.Empty;
-            if (!string.IsNullOrEmpty(_resourcesRelativePath))
-            {
-                _resourcesRelativePath = _resourcesRelativePath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
-            }
-
-            ResourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName).ToList();
+            _logger = loggerFactory.CreateLogger<FileProvider>();
+            _env = env;
+            _options = options;
+            _actionContextAccessor = actionContextAccessor;
+            _resourcesRelativePath = _options.ResourcesPath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
+            ResourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName);
+            _globalResources = new JsonGlobalResources(env, options, loggerFactory);
         }
 
-        #endregion
-
-        #region Indexers
-
-        public LocalizedString this[string name]
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(name))
-                {
-                    throw new ArgumentNullException(nameof(name));
-                }
-
-                var value = GetStringSafely(name);
-                return new LocalizedString(name, value ?? name, resourceNotFound: value == null);
-            }
-        }
-
-        public LocalizedString this[string name, params object[] arguments]
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(name))
-                {
-                    throw new ArgumentNullException(nameof(name));
-                }
-
-                var format = GetStringSafely(name);
-                var value = string.Format(format ?? name, arguments);
-                return new LocalizedString(name, value, resourceNotFound: format == null);
-            }
-        }
-
-        #endregion
-
-        #region Properties
-
-        public RequestCulture DefaultCulture { get; private set; }
-        public JsonGlobalResources GlobalResources { get; private set; }
         public IEnumerable<string> ResourceFileLocations { get; private set; }
 
-        public string[] GlobalFileLocations
+        public string? GetStringSafely(string name)
         {
-            get
-            {
-                var culture = CultureInfo.CurrentUICulture;
-                return GlobalResources.GetGlobalFileLocations(culture);
-            }
-        }
-
-        public string[] AreaFileLocations
-        {
-            get
-            {
-                var culture = CultureInfo.CurrentUICulture;
-                string areaName = FindCurrentContextAreaName();
-
-                if (!string.IsNullOrEmpty(areaName))
-                {
-                    return GlobalResources.GetAreaFileLocations(culture, areaName);
-                }
-                else
-                {
-                    return new string[0];
-                }
-            }
-        }
-
-        #endregion
-
-        #region Methods
-
-        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IStringLocalizer WithCulture(CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-
-        #region Utilites
-
-        private string GetStringSafely(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
             var keyCulture = CultureInfo.CurrentUICulture;
             var currentCulture = keyCulture;
-            CultureInfo previousCulture = null;
+            CultureInfo? previousCulture = null;
             do
             {
                 // first try resources per type
@@ -160,9 +51,9 @@ namespace Mohmd.JsonResources.Internal
                     return token.GetString();
                 }
 
-                string areaName = FindCurrentContextAreaName();
+                string? areaName = FindCurrentContextAreaName();
 
-                List<ResourceCollection> resourceCollections = GlobalResources.GetResources(keyCulture, areaName);
+                List<ResourceCollection> resourceCollections = _globalResources.GetResources(keyCulture, areaName);
                 List<KeyValuePair<string, string>> flatResources = resourceCollections.SelectMany(x => x.Resources)
                                                                                       .ToList();
 
@@ -189,7 +80,7 @@ namespace Mohmd.JsonResources.Internal
             return null;
         }
 
-        private JsonDocument GetResourceObject(CultureInfo currentCulture)
+        public JsonDocument? GetResourceObject(CultureInfo currentCulture)
         {
             if (currentCulture == null)
             {
@@ -199,29 +90,24 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + currentCulture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, currentCulture) || LocalizerUtil.IsChildCulture(currentCulture, DefaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(new CultureInfo(_options.DefaultUICultureName), currentCulture) || LocalizerUtil.IsChildCulture(currentCulture, new CultureInfo(_options.DefaultUICultureName)))
             {
                 cultureSuffix = string.Empty;
             }
 
             var cacheKey = string.IsNullOrEmpty(cultureSuffix) ? "default" : cultureSuffix;
 
-            var lazyJsonDocumentGetter = new Lazy<JsonDocument>(
+            var lazyJsonDocumentGetter = new Lazy<JsonDocument?>(
                 () =>
                 {
                     _logger.LogDebug_Localizer($"Resource file content not found in cache ({cacheKey}), try to load from file.");
 
-                    string root = _env.ContentRootPath;
-
-                    if (!string.IsNullOrEmpty(_resourcesRelativePath))
-                    {
-                        root = Path.Combine(root, _resourcesRelativePath.Trim('/', '\\'));
-                    }
+                    string root = Path.Combine(_env.ContentRootPath, _resourcesRelativePath.Trim('/', '\\'));
 
                     _logger.LogDebug_Localizer($"Looking for resource files in {root}");
 
                     // First attempt to find a resource file location that exists.
-                    string resourcePath = null;
+                    string? resourcePath = null;
                     foreach (var resourceFileLocation in ResourceFileLocations)
                     {
                         resourcePath = resourceFileLocation + cultureSuffix + ".json";
@@ -272,11 +158,11 @@ namespace Mohmd.JsonResources.Internal
             return resourceObject;
         }
 
-        private string FindCurrentContextAreaName()
+        private string? FindCurrentContextAreaName()
         {
-            string areaName = null;
+            string? areaName = null;
 
-            object obj = default;
+            object? obj = default;
             if (_actionContextAccessor.ActionContext?.RouteData.Values.TryGetValue("area", out obj) == true)
             {
                 areaName = obj?.ToString();
@@ -288,7 +174,5 @@ namespace Mohmd.JsonResources.Internal
 
             return areaName;
         }
-
-        #endregion
     }
 }

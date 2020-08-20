@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using Mohmd.JsonResources;
 using Mohmd.JsonResources.Extensions;
+using Mohmd.JsonResources.Internal;
+using Mohmd.JsonResources.Providers;
 using System;
+using JsonStringLocalizerFactory = Mohmd.JsonResources.JsonStringLocalizerFactory;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -19,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return AddJsonLocalization(services, null);
         }
 
-        public static IServiceCollection AddJsonLocalization(this IServiceCollection services, Action<JsonLocalizationOptions> setupAction)
+        public static IServiceCollection AddJsonLocalization(this IServiceCollection services, Action<JsonLocalizationOptions>? setupAction)
         {
             if (services == null)
             {
@@ -28,11 +32,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.TryAddSingleton<IActionContextAccessor, ActionContextAccessor>();
             services.TryAddSingleton<IStringLocalizerFactory, JsonStringLocalizerFactory>();
+            services.AddSingleton<IJsonResourceProviderFactory, JsonResourceProviderFactory>();
 
-            if (setupAction != null)
+            services.Configure<JsonLocalizationOptions>(s =>
             {
-                services.Configure(setupAction);
-            }
+                setupAction?.Invoke(s);
+                JsonLocalizationOptions.Current = s;
+            });
+            services.AddScoped(serviceProvider => serviceProvider.GetService<IOptionsSnapshot<JsonLocalizationOptions>>().Value);
 
             return services;
         }

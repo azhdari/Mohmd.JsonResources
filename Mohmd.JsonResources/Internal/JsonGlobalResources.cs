@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mohmd.JsonResources.Extensions;
@@ -18,7 +18,7 @@ namespace Mohmd.JsonResources.Internal
     {
         #region Fields
 
-        private readonly ConcurrentDictionary<string, Lazy<JsonDocument>> _resources = new ConcurrentDictionary<string, Lazy<JsonDocument>>();
+        private readonly ConcurrentDictionary<string, Lazy<JsonDocument?>> _resources = new ConcurrentDictionary<string, Lazy<JsonDocument?>>();
         private readonly IHostingEnvironment _app;
         private readonly JsonLocalizationOptions _options;
         private readonly ILogger _logger;
@@ -28,8 +28,7 @@ namespace Mohmd.JsonResources.Internal
         #region Constructors
 
         public JsonGlobalResources(IHostingEnvironment hostingEnvironment,
-                                   IOptions<JsonLocalizationOptions> options,
-                                   RequestCulture defaultCulture,
+                                   JsonLocalizationOptions options,
                                    ILoggerFactory loggerFactory)
         {
             if (options == null)
@@ -37,11 +36,11 @@ namespace Mohmd.JsonResources.Internal
                 throw new ArgumentNullException(nameof(options));
             }
 
-            _options = options.Value;
+            _options = options;
             _app = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
             GlobalName = _options.GlobalResourceFileName ?? "global";
             AreaName = _options.AreasResourcePrefix ?? "areas";
-            DefaultCulture = defaultCulture ?? throw new ArgumentNullException(nameof(defaultCulture));
+            DefaultCulture = new CultureInfo(_options.DefaultUICultureName);
             _logger = loggerFactory.CreateLogger<JsonGlobalResources>();
 
             ResourceRelativePath = _options.ResourcesPath ?? string.Empty;
@@ -55,7 +54,7 @@ namespace Mohmd.JsonResources.Internal
 
         #region Properties
 
-        public RequestCulture DefaultCulture { get; private set; }
+        public CultureInfo DefaultCulture { get; private set; }
         public string ResourceRelativePath { get; private set; }
         public string GlobalName { get; private set; }
         public string AreaName { get; private set; }
@@ -69,7 +68,7 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(new CultureInfo(_options.DefaultUICultureName), culture) || LocalizerUtil.IsChildCulture(culture, new CultureInfo(_options.DefaultUICultureName)))
             {
                 cultureSuffix = string.Empty;
             }
@@ -102,7 +101,7 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(new CultureInfo(_options.DefaultUICultureName), culture) || LocalizerUtil.IsChildCulture(culture, new CultureInfo(_options.DefaultUICultureName)))
             {
                 cultureSuffix = string.Empty;
             }
@@ -129,12 +128,12 @@ namespace Mohmd.JsonResources.Internal
 
         //
 
-        public JsonDocument GetGlobalResources(CultureInfo culture)
+        public JsonDocument? GetGlobalResources(CultureInfo culture)
         {
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(DefaultCulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture))
             {
                 cultureSuffix = string.Empty;
             }
@@ -142,7 +141,7 @@ namespace Mohmd.JsonResources.Internal
             var cacheName = "global";
             cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
 
-            var lazyJObjectGetter = new Lazy<JsonDocument>(() =>
+            var lazyJObjectGetter = new Lazy<JsonDocument?>(() =>
                 {
                     _logger.LogDebug_Localizer($"Resource file content not found in cache ({cacheName}), try to load from file.");
 
@@ -158,7 +157,7 @@ namespace Mohmd.JsonResources.Internal
                     var resourceBaseName = GlobalName;
                     var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
-                    string resourcePath = null;
+                    string? resourcePath = null;
                     foreach (var resourceFileLocation in resourceFileLocations)
                     {
                         resourcePath = resourceFileLocation + cultureSuffix + ".json";
@@ -207,7 +206,7 @@ namespace Mohmd.JsonResources.Internal
             return lazyJObjectGetter.Value;
         }
 
-        public JsonDocument GetAreaResources(CultureInfo culture, string areaName)
+        public JsonDocument? GetAreaResources(CultureInfo culture, string areaName)
         {
             if (string.IsNullOrEmpty(areaName?.Trim()))
             {
@@ -217,7 +216,7 @@ namespace Mohmd.JsonResources.Internal
             var cultureSuffix = "." + culture.Name;
             cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
 
-            if (LocalizerUtil.IsChildCulture(DefaultCulture.UICulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture.UICulture))
+            if (LocalizerUtil.IsChildCulture(DefaultCulture, culture) || LocalizerUtil.IsChildCulture(culture, DefaultCulture))
             {
                 cultureSuffix = string.Empty;
             }
@@ -227,7 +226,7 @@ namespace Mohmd.JsonResources.Internal
             var cacheName = $"{AreaName}{areaSuffix}";
             cacheName += string.IsNullOrEmpty(cultureSuffix) ? ".default" : cultureSuffix;
 
-            var lazyJObjectGetter = new Lazy<JsonDocument>(
+            var lazyJObjectGetter = new Lazy<JsonDocument?>(
                 () =>
                 {
                     _logger.LogDebug_Localizer($"Resource file content not found in cache ({cacheName}), try to load from file.");
@@ -244,7 +243,7 @@ namespace Mohmd.JsonResources.Internal
                     var resourceBaseName = AreaName;
                     var resourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _app.ApplicationName).ToList();
 
-                    string resourcePath = null;
+                    string? resourcePath = null;
                     foreach (var resourceFileLocation in resourceFileLocations)
                     {
                         resourcePath = resourceFileLocation + areaSuffix + cultureSuffix + ".json";
@@ -293,20 +292,20 @@ namespace Mohmd.JsonResources.Internal
             return lazyJObjectGetter.Value;
         }
 
-        public List<ResourceCollection> GetResources(CultureInfo culture, string areaName = null)
+        public List<ResourceCollection> GetResources(CultureInfo culture, string? areaName = null)
         {
             List<ResourceCollection> resources = new List<ResourceCollection>();
 
             if (!string.IsNullOrWhiteSpace(areaName))
             {
-                ResourceCollection area = ConvertToResourceCollection(GetAreaResources(culture, areaName), culture.Name);
+                ResourceCollection? area = ConvertToResourceCollection(GetAreaResources(culture, areaName ?? string.Empty), culture.Name);
                 if (area != null)
                 {
                     resources.Add(area);
                 }
             }
 
-            ResourceCollection global = ConvertToResourceCollection(GetGlobalResources(culture), culture.Name);
+            ResourceCollection? global = ConvertToResourceCollection(GetGlobalResources(culture), culture.Name);
             if (global != null)
             {
                 resources.Add(global);
@@ -324,7 +323,7 @@ namespace Mohmd.JsonResources.Internal
 
         #region Utilities
 
-        private ResourceCollection ConvertToResourceCollection(JsonDocument jsonObject, string locale)
+        private ResourceCollection? ConvertToResourceCollection(JsonDocument? jsonObject, string locale)
         {
             if (jsonObject == null)
             {
@@ -351,13 +350,9 @@ namespace Mohmd.JsonResources.Internal
 
             _logger.LogInformation_Localizer($"{dic.Count} resource keys loaded for {locale}");
 
-            return new ResourceCollection
-            {
-                Locale = locale,
-                Resources = dic,
-            };
+            return new ResourceCollection(locale, dic);
         }
 
-#endregion
+        #endregion
     }
 }
