@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Mohmd.JsonResources.Example.Models;
+using Mohmd.JsonResources.ExampleCore30.Models;
 
-namespace Mohmd.JsonResources.Example.Areas.Admin.Controllers
+namespace Mohmd.JsonResources.ExampleCore30.Areas.Admin.Controllers
 {
     [Area("Admin")]
     public class HomeController : Controller

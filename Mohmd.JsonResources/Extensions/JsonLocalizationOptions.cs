@@ -1,4 +1,8 @@
-﻿namespace Mohmd.JsonResources.Extensions
+﻿using Mohmd.JsonResources.Internal;
+using System;
+using System.Reflection;
+
+namespace Mohmd.JsonResources.Extensions
 {
     public class JsonLocalizationOptions
     {
@@ -11,5 +15,34 @@
         public bool UseEmbededResources { get; set; } = false;
 
         public static JsonLocalizationOptions Current { get; set; }
+
+        public JsonLocalizationOptions AddAssembly<T>()
+        {
+            Type typeToFindAssembly = typeof(T);
+            Assembly assembly = typeToFindAssembly.Assembly;
+            return AddAssembly(assembly);
+        }
+
+        public JsonLocalizationOptions AddAssembly(Type typeToFindAssembly)
+        {
+            if (typeToFindAssembly is null)
+            {
+                throw new ArgumentNullException(nameof(typeToFindAssembly));
+            }
+
+            Assembly assembly = typeToFindAssembly.Assembly;
+            return AddAssembly(assembly);
+        }
+
+        public JsonLocalizationOptions AddAssembly(Assembly assembly)
+        {
+            if (assembly is null)
+            {
+                throw new ArgumentNullException(nameof(assembly));
+            }
+
+            AssemblyCollection.Assemblies.Add(assembly);
+            return this;
+        }
     }
 }

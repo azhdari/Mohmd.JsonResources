@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using Mohmd.JsonResources.Example.Models;
+using Mohmd.JsonResources.ExampleCore30.Models;
 
-namespace Mohmd.JsonResources.Example.Controllers
+namespace Mohmd.JsonResources.ExampleCore30.Controllers
 {
     public class HomeController : Controller
     {

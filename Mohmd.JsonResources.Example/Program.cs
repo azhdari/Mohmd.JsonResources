@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Mohmd.JsonResources.Example
+namespace Mohmd.JsonResources.ExampleCore30
 {
     public class Program
     {

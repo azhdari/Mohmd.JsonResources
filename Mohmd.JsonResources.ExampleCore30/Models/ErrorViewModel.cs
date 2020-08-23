@@ -1,6 +1,6 @@
 using System;
 
-namespace Mohmd.JsonResources.Example.Models
+namespace Mohmd.JsonResources.ExampleCore30.Models
 {
     public class ErrorViewModel
     {

@@ -7,7 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Mohmd.JsonResources.Example.TagHelpers
+namespace Mohmd.JsonResources.ExampleCore30.TagHelpers
 {
     [HtmlTargetElement("language-changer", TagStructure = TagStructure.NormalOrSelfClosing)]
     public class LanguageChangerTagHelper : TagHelper

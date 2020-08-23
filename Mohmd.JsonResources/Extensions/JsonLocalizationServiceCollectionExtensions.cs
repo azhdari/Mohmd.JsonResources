@@ -7,6 +7,7 @@ using Mohmd.JsonResources.Extensions;
 using Mohmd.JsonResources.Internal;
 using Mohmd.JsonResources.Providers;
 using System;
+using System.Reflection;
 using JsonStringLocalizerFactory = Mohmd.JsonResources.JsonStringLocalizerFactory;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -41,6 +42,35 @@ namespace Microsoft.Extensions.DependencyInjection
             });
             services.AddScoped(serviceProvider => serviceProvider.GetService<IOptionsSnapshot<JsonLocalizationOptions>>().Value);
 
+            return services;
+        }
+
+        public static IServiceCollection AddJsonLocalizationAssembly<T>(this IServiceCollection services)
+        {
+            Type typeToFindAssembly = typeof(T);
+            Assembly assembly = typeToFindAssembly.Assembly;
+            return AddJsonLocalizationAssembly(services, assembly);
+        }
+
+        public static IServiceCollection AddJsonLocalizationAssembly(this IServiceCollection services, Type typeToFindAssembly)
+        {
+            if (typeToFindAssembly is null)
+            {
+                throw new ArgumentNullException(nameof(typeToFindAssembly));
+            }
+
+            Assembly assembly = typeToFindAssembly.Assembly;
+            return AddJsonLocalizationAssembly(services, assembly);
+        }
+
+        public static IServiceCollection AddJsonLocalizationAssembly(this IServiceCollection services, Assembly assembly)
+        {
+            if (assembly is null)
+            {
+                throw new ArgumentNullException(nameof(assembly));
+            }
+
+            AssemblyCollection.Assemblies.Add(assembly);
             return services;
         }
     }

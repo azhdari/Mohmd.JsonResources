@@ -48,10 +48,13 @@ namespace Mohmd.JsonResources.ExampleCore30
             services.AddScoped(typeof(IStringLocalizer<>), typeof(CustomStringLocalizer<>));
             services.AddJsonLocalization(options =>
             {
-                options.ResourcesPath = "Resources";
-                options.GlobalResourceFileName = "global";
-                options.AreasResourcePrefix = "areas";
+                options.ResourcesPath = "Resources_Embeded";
+                options.GlobalResourceFileName = "Global";
+                options.AreasResourcePrefix = "Area";
                 options.SetDefaultCultureCookie = true;
+
+                options.UseEmbededResources = true;
+                options.AddAssembly<Startup>();
             });
 
             services

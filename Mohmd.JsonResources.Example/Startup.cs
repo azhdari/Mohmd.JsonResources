@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
-namespace Mohmd.JsonResources.Example
+namespace Mohmd.JsonResources.ExampleCore30
 {
     public class Startup
     {

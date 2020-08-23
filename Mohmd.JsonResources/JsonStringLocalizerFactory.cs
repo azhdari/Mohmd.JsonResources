@@ -60,8 +60,10 @@ namespace Mohmd.JsonResources
 
         public IStringLocalizer Create(string baseName, string location)
         {
+            string? resourceRootName = JsonLocalizationOptions.Current.UseEmbededResources ? JsonLocalizationOptions.Current.ResourcesPath : null;
+
             location ??= string.Empty;
-            var resourceBaseName = location + "." + LocalizerUtil.TrimPrefix(baseName, location + ".");
+            var resourceBaseName = location + "." + (resourceRootName != null ? $"{resourceRootName}." : "") + LocalizerUtil.TrimPrefix(baseName, location + ".");
             resourceBaseName = resourceBaseName.TrimStart('.');
 
             var viewExtension = _knownViewExtensions.FirstOrDefault(extension => resourceBaseName.EndsWith(extension));

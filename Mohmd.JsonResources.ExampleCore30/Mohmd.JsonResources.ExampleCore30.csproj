@@ -5,6 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Resources_Embeded\Views\Home\Privacy.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources_Embeded\**\*.json" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <ProjectReference Include="..\Mohmd.JsonResources\Mohmd.JsonResources.csproj" />
   </ItemGroup>
 
