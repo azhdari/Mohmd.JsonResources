@@ -11,6 +11,5 @@ namespace Mohmd.JsonResources.Providers
     public interface IJsonResourceProvider
     {
         string? GetStringSafely(string name);
-        JsonDocument? GetResourceObject(CultureInfo currentCulture);
     }
 }

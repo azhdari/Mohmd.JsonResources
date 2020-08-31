@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Mohmd.JsonResources.Extensions;
 
 namespace Mohmd.JsonResources.Providers
@@ -23,7 +22,7 @@ namespace Mohmd.JsonResources.Providers
         {
             if (options.UseEmbededResources)
             {
-                return new EmbeddedProvider(resourceBaseName, _loggerFactory, _env, _actionContextAccessor, options);
+                return new EmbeddedProvider(resourceBaseName, _actionContextAccessor, options);
             }
             else
             {

@@ -31,12 +31,7 @@ namespace Mohmd.JsonResources.Internal
                                    JsonLocalizationOptions options,
                                    ILoggerFactory loggerFactory)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _app = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
             GlobalName = _options.GlobalResourceFileName ?? "global";
             AreaName = _options.AreasResourcePrefix ?? "areas";

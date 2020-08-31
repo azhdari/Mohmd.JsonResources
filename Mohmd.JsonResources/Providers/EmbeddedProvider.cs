@@ -20,28 +20,16 @@ namespace Mohmd.JsonResources.Providers
 {
     public class EmbeddedProvider : IJsonResourceProvider
     {
-        private readonly ILogger _logger;
-        private readonly IHostingEnvironment _env;
         private readonly IActionContextAccessor _actionContextAccessor;
         private readonly JsonLocalizationOptions _options;
-        private readonly string _resourcesRelativePath;
-        private readonly ConcurrentDictionary<string, Lazy<JsonDocument?>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JsonDocument?>>();
-        private readonly Lazy<EmbededResourceFile[]> _allEmbededResources;
-        private readonly JsonGlobalResources _globalResources;
 
         private readonly string _resourceFileLocation;
         private readonly Lazy<AssemblyResources[]> _assemblyResources;
 
-        public EmbeddedProvider(string resourceBaseName, ILoggerFactory loggerFactory, IHostingEnvironment env, IActionContextAccessor actionContextAccessor, JsonLocalizationOptions options)
+        public EmbeddedProvider(string resourceBaseName, IActionContextAccessor actionContextAccessor, JsonLocalizationOptions options)
         {
-            _logger = loggerFactory.CreateLogger<EmbeddedProvider>();
-            _env = env;
             _options = options;
             _actionContextAccessor = actionContextAccessor;
-            _resourcesRelativePath = _options.ResourcesPath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
-            _globalResources = new JsonGlobalResources(env, options, loggerFactory);
-
-            _allEmbededResources = new Lazy<EmbededResourceFile[]>(AssemblyCollection.GetAllResourceFileContents);
 
             _resourceFileLocation = LocalizerUtil.ExpandPaths(resourceBaseName, _options.ResourcesPath).First();
             _assemblyResources = new Lazy<AssemblyResources[]>(() =>
@@ -116,61 +104,6 @@ namespace Mohmd.JsonResources.Providers
 
             //// if we got here, so no resource found
             //return null;
-        }
-        public JsonDocument? GetResourceObject(CultureInfo currentCulture)
-        {
-            if (currentCulture == null)
-            {
-                throw new ArgumentNullException(nameof(currentCulture));
-            }
-
-            var cultureSuffix = "." + currentCulture.Name;
-            cultureSuffix = cultureSuffix == "." ? string.Empty : cultureSuffix;
-
-            if (LocalizerUtil.IsChildCulture(new CultureInfo(_options.DefaultUICultureName), currentCulture) || LocalizerUtil.IsChildCulture(currentCulture, new CultureInfo(_options.DefaultUICultureName)))
-            {
-                cultureSuffix = string.Empty;
-            }
-
-            var cacheKey = string.IsNullOrEmpty(cultureSuffix) ? "default" : cultureSuffix;
-
-            var lazyJsonDocumentGetter = new Lazy<JsonDocument?>(
-                () =>
-                {
-                    _logger.LogDebug_Localizer($"Resource file content not found in cache ({cacheKey}), try to load from file.");
-
-                    // First attempt to find a resource file location that exists.
-                    string? resourcePath = null;
-                    resourcePath = _resourceFileLocation + cultureSuffix + ".json";
-
-                    if (!_assemblyResources.Value.Any(x => x.CultureResources.Any(cr => cr.Resources.Any(r => r.Key == resourcePath))))
-                    {
-                        _logger.LogWarning_Localizer($"There is no resource file found for {cacheKey}");
-                        return null;
-                    }
-
-                    // Found a resource file path: attempt to parse it into a JsonDocument.
-                    try
-                    {
-                        var resourceItem = _allEmbededResources.Value.FirstOrDefault(x => x.Name == resourcePath);
-                        var content = JsonDocument.Parse(resourceItem.Content);
-
-                        _logger.LogInformation_Localizer($"Resource file content loaded: {resourcePath}");
-
-                        return content;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError_Localizer(ex, $"Error while loading resource file: {ex.Message} ({resourcePath})");
-                        return null;
-                    }
-                }, LazyThreadSafetyMode.ExecutionAndPublication);
-
-            _logger.LogInformation_Localizer($"Trying to load resource file content from cache {cacheKey}.");
-
-            lazyJsonDocumentGetter = _resourceObjectCache.GetOrAdd(cacheKey, lazyJsonDocumentGetter);
-            var resourceObject = lazyJsonDocumentGetter.Value;
-            return resourceObject;
         }
 
         private ResourceFileContent? GetResource(CultureInfo cultureInfo, bool isDefaultCulture)
