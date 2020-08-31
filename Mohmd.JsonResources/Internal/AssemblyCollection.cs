@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using Mohmd.JsonResources.Internal.Types;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -14,7 +15,7 @@ namespace Mohmd.JsonResources.Internal
 
         public static ConcurrentBag<Assembly> Assemblies { get; }
 
-        public static EmbededResourceItem[] GetResourceFileContents(Assembly assembly)
+        public static EmbededResourceFile[] GetResourceFileContents(Assembly assembly)
         {
             if (assembly is null)
             {
@@ -32,14 +33,14 @@ namespace Mohmd.JsonResources.Internal
                 .Select(item =>
                 {
                     using StreamReader sr = new StreamReader(item.Stream);
-                    return new EmbededResourceItem(item.Name, sr.ReadToEnd());
+                    return new EmbededResourceFile(item.Name, sr.ReadToEnd());
                 })
                 .ToArray();
         }
 
-        internal static EmbededResourceItem[] GetAllResourceFileContents()
+        internal static EmbededResourceFile[] GetAllResourceFileContents()
         {
-            return Assemblies?.ToList().SelectMany(GetResourceFileContents).ToArray() ?? new EmbededResourceItem[0];
+            return Assemblies?.ToList().SelectMany(GetResourceFileContents).ToArray() ?? new EmbededResourceFile[0];
         }
     }
 }

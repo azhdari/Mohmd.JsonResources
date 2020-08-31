@@ -1,8 +1,8 @@
-﻿namespace Mohmd.JsonResources.Internal
+﻿namespace Mohmd.JsonResources.Internal.Types
 {
-    public class EmbededResourceItem
+    public class EmbededResourceFile
     {
-        public EmbededResourceItem(string name, string content)
+        public EmbededResourceFile(string name, string content)
         {
             Name = name;
             Content = content;

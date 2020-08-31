@@ -3,6 +3,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Mohmd.JsonResources.Extensions;
 using Mohmd.JsonResources.Internal;
+using Mohmd.JsonResources.Internal.Embedded;
+using Mohmd.JsonResources.Internal.Types;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -24,8 +26,11 @@ namespace Mohmd.JsonResources.Providers
         private readonly JsonLocalizationOptions _options;
         private readonly string _resourcesRelativePath;
         private readonly ConcurrentDictionary<string, Lazy<JsonDocument?>> _resourceObjectCache = new ConcurrentDictionary<string, Lazy<JsonDocument?>>();
-        private readonly Lazy<EmbededResourceItem[]> _allEmbededResources;
+        private readonly Lazy<EmbededResourceFile[]> _allEmbededResources;
         private readonly JsonGlobalResources _globalResources;
+
+        private readonly string _resourceFileLocation;
+        private readonly Lazy<AssemblyResources[]> _assemblyResources;
 
         public EmbeddedProvider(string resourceBaseName, ILoggerFactory loggerFactory, IHostingEnvironment env, IActionContextAccessor actionContextAccessor, JsonLocalizationOptions options)
         {
@@ -34,55 +39,83 @@ namespace Mohmd.JsonResources.Providers
             _options = options;
             _actionContextAccessor = actionContextAccessor;
             _resourcesRelativePath = _options.ResourcesPath.Replace(Path.AltDirectorySeparatorChar, '.').Replace(Path.DirectorySeparatorChar, '.');
-            ResourceFileLocations = LocalizerUtil.ExpandPaths(resourceBaseName, _options.ResourcesPath);
             _globalResources = new JsonGlobalResources(env, options, loggerFactory);
 
-            _allEmbededResources = new Lazy<EmbededResourceItem[]>(AssemblyCollection.GetAllResourceFileContents);
-        }
+            _allEmbededResources = new Lazy<EmbededResourceFile[]>(AssemblyCollection.GetAllResourceFileContents);
 
-        public IEnumerable<string> ResourceFileLocations { get; private set; }
+            _resourceFileLocation = LocalizerUtil.ExpandPaths(resourceBaseName, _options.ResourcesPath).First();
+            _assemblyResources = new Lazy<AssemblyResources[]>(() =>
+            {
+                if (!MemoryStorage.AssemblyResources.Any())
+                {
+                    EmbeddedResourcesHelper.GetResources(AssemblyCollection.Assemblies.ToArray())
+                        .ToList()
+                        .ForEach(MemoryStorage.AssemblyResources.Add);
+                }
+
+                return MemoryStorage.AssemblyResources.ToArray();
+            });
+        }
 
         public string? GetStringSafely(string name)
         {
-            var keyCulture = CultureInfo.CurrentUICulture;
-            var currentCulture = keyCulture;
-            CultureInfo? previousCulture = null;
-            do
+            ResourceFileContent? resourceFileContent = GetResource(CultureInfo.CurrentUICulture, IsDefaultCulture(CultureInfo.CurrentUICulture));
+
+            if (resourceFileContent == null)
             {
-                // first try resources per type
-                var local = GetResourceObject(keyCulture);
-                if (local != null && local.RootElement.TryGetProperty(name, out var token))
-                {
-                    return token.GetString();
-                }
-
-                string? areaName = FindCurrentContextAreaName();
-
-                List<ResourceCollection> resourceCollections = _globalResources.GetResources(keyCulture, areaName);
-                List<KeyValuePair<string, string>> flatResources = resourceCollections.SelectMany(x => x.Resources)
-                                                                                      .ToList();
-
-                // if not found, then try find the name in area resources (if available)
-                // if not found, then try find the name in global resources
-                if (flatResources.Any(x => x.Key?.Normalize().ToUpperInvariant() == name?.Normalize().ToUpperInvariant()))
-                {
-                    return resourceCollections.SelectMany(x => x.Resources)
-                                              .Where(x => x.Key?.Normalize().ToUpperInvariant() == name?.Normalize().ToUpperInvariant())
-                                              .First().Value;
-                }
-                else
-                {
-                    _logger.LogDebug_Localizer($"Resource key {name} not found in {flatResources.Count}.");
-                }
-
-                // Consult parent culture.
-                previousCulture = currentCulture;
-                currentCulture = currentCulture.Parent;
+                return null;
             }
-            while (previousCulture != currentCulture);
 
-            // if we got here, so no resource found
-            return null;
+            name = name.Normalize().ToLowerInvariant();
+
+            ResourceItem? item = resourceFileContent.FirstOrDefault(x => x.Key?.Normalize().ToLowerInvariant() == name);
+
+            if (item == null)
+            {
+                return null;
+            }
+
+            return item.Value.Value;
+
+            //var keyCulture = CultureInfo.CurrentUICulture;
+            //var currentCulture = keyCulture;
+            //CultureInfo? previousCulture = null;
+            //do
+            //{
+            //    // first try resources per type
+            //    var local = GetResourceObject(keyCulture);
+            //    if (local != null && local.RootElement.TryGetProperty(name, out var token))
+            //    {
+            //        return token.GetString();
+            //    }
+
+            //    string? areaName = FindCurrentContextAreaName();
+
+            //    List<ResourceCollection> resourceCollections = _globalResources.GetResources(keyCulture, areaName);
+            //    List<KeyValuePair<string, string>> flatResources = resourceCollections.SelectMany(x => x.Resources)
+            //                                                                          .ToList();
+
+            //    // if not found, then try find the name in area resources (if available)
+            //    // if not found, then try find the name in global resources
+            //    if (flatResources.Any(x => x.Key?.Normalize().ToUpperInvariant() == name?.Normalize().ToUpperInvariant()))
+            //    {
+            //        return resourceCollections.SelectMany(x => x.Resources)
+            //                                  .Where(x => x.Key?.Normalize().ToUpperInvariant() == name?.Normalize().ToUpperInvariant())
+            //                                  .First().Value;
+            //    }
+            //    else
+            //    {
+            //        _logger.LogDebug_Localizer($"Resource key {name} not found in {flatResources.Count}.");
+            //    }
+
+            //    // Consult parent culture.
+            //    previousCulture = currentCulture;
+            //    currentCulture = currentCulture.Parent;
+            //}
+            //while (previousCulture != currentCulture);
+
+            //// if we got here, so no resource found
+            //return null;
         }
         public JsonDocument? GetResourceObject(CultureInfo currentCulture)
         {
@@ -108,23 +141,9 @@ namespace Mohmd.JsonResources.Providers
 
                     // First attempt to find a resource file location that exists.
                     string? resourcePath = null;
-                    foreach (var resourceFileLocation in ResourceFileLocations)
-                    {
-                        resourcePath = resourceFileLocation + cultureSuffix + ".json";
+                    resourcePath = _resourceFileLocation + cultureSuffix + ".json";
 
-                        if (_allEmbededResources.Value.Any(x => x.Name == resourcePath))
-                        {
-                            _logger.LogDebug_Localizer($"Resource file found: {resourcePath}");
-                            break;
-                        }
-                        else
-                        {
-                            _logger.LogDebug_Localizer($"Resource file not found: {resourcePath}");
-                            resourcePath = null;
-                        }
-                    }
-
-                    if (resourcePath == null)
+                    if (!_assemblyResources.Value.Any(x => x.CultureResources.Any(cr => cr.Resources.Any(r => r.Key == resourcePath))))
                     {
                         _logger.LogWarning_Localizer($"There is no resource file found for {cacheKey}");
                         return null;
@@ -154,6 +173,33 @@ namespace Mohmd.JsonResources.Providers
             return resourceObject;
         }
 
+        private ResourceFileContent? GetResource(CultureInfo cultureInfo, bool isDefaultCulture)
+        {
+            if (isDefaultCulture)
+            {
+                return MemoryStorage.Find(new ResourceFileKey(_resourceFileLocation, cultureInfo.Name), key =>
+                {
+                    return _assemblyResources.Value
+                        .SelectMany(x => x.DefaultResources)
+                        .ToList()
+                        .ToResourceFileContent();
+                });
+            }
+            else
+            {
+                return MemoryStorage.Find(new ResourceFileKey(_resourceFileLocation, cultureInfo.Name), key =>
+                {
+                    return _assemblyResources.Value
+                        .SelectMany(x => x.CultureResources)
+                        .Where(x => IsCultureInSameFamily(cultureInfo)(x.CultureInfo))
+                        .SelectMany(x => x.Resources)
+                        .Union(_assemblyResources.Value.SelectMany(x => x.DefaultResources))
+                        .ToList()
+                        .ToResourceFileContent();
+                });
+            }
+        }
+
         private string? FindCurrentContextAreaName()
         {
             string? areaName = null;
@@ -170,5 +216,11 @@ namespace Mohmd.JsonResources.Providers
 
             return areaName;
         }
+
+        private Func<CultureInfo, bool> IsCultureInSameFamily(CultureInfo cultureInfo)
+            => (CultureInfo toCheck)
+            => (LocalizerUtil.IsChildCulture(cultureInfo, toCheck) || LocalizerUtil.IsChildCulture(toCheck, cultureInfo));
+
+        private bool IsDefaultCulture(CultureInfo cultureInfo) => IsCultureInSameFamily(new CultureInfo(_options.DefaultUICultureName))(cultureInfo);
     }
 }
