@@ -7,8 +7,8 @@ namespace Mohmd.JsonResources.Internal.Types
     {
         public Assembly MainAssembly { get; set; }
 
-        public ResourceItem[] DefaultResources { get; set; }
+        public EmbededResourceFile[] DefaultResources { get; set; }
 
-        public (CultureInfo CultureInfo, ResourceItem[] Resources)[] CultureResources { get; set; }
+        public (CultureInfo CultureInfo, EmbededResourceFile[] Files)[] CulturalFiles { get; set; }
     }
 }

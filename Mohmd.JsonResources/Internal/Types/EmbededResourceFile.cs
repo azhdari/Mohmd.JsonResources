@@ -2,14 +2,14 @@
 {
     public class EmbededResourceFile
     {
-        public EmbededResourceFile(string name, string content)
+        public EmbededResourceFile(string name, ResourceFileContent items)
         {
             Name = name;
-            Content = content;
+            Items = items;
         }
 
         public string Name { get; set; }
 
-        public string Content { get; set; }
+        public ResourceFileContent Items { get; set; }
     }
 }

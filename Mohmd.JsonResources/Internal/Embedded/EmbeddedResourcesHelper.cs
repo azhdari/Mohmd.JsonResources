@@ -18,8 +18,8 @@ namespace Mohmd.JsonResources.Internal.Embedded
                     return new AssemblyResources
                     {
                         MainAssembly = item.MainAssembly,
-                        DefaultResources = GetResourceFileContents(item.MainAssembly),
-                        CultureResources = item.Resources.Select(x => (cultureInfo: x.ci, resources: GetResourceFileContents(x.ass))).ToArray(),
+                        DefaultResources = GetResourceFiles(item.MainAssembly),
+                        CulturalFiles = item.Resources.Select(x => (cultureInfo: x.ci, resources: GetResourceFiles(x.ass))).ToArray(),
                     };
                 })
                 .ToArray();
@@ -77,7 +77,7 @@ namespace Mohmd.JsonResources.Internal.Embedded
             return resourceAssembly;
         };
 
-        private static ResourceItem[] GetResourceFileContents(Assembly assembly)
+        private static EmbededResourceFile[] GetResourceFiles(Assembly assembly)
         {
             if (assembly is null)
             {
@@ -86,7 +86,7 @@ namespace Mohmd.JsonResources.Internal.Embedded
 
             string[] names = assembly.GetManifestResourceNames();
 
-            ResourceItem[]? result = names
+            EmbededResourceFile[]? result = names
                 .Select(name => new
                 {
                     Name = name,
@@ -95,15 +95,29 @@ namespace Mohmd.JsonResources.Internal.Embedded
                 .Select(item =>
                 {
                     using StreamReader sr = new StreamReader(item.Stream);
-                    return new EmbededResourceFile(item.Name, sr.ReadToEnd());
+                    return (item.Name, Json: sr.ReadToEnd());
                 })
-                .SelectMany(file =>
+                .Select(item =>
                 {
-                    return JsonDocument.Parse(file.Content)
-                        .RootElement
-                        .EnumerateObject()
+                    try
+                    {
+                        return (item.Name, Root: JsonDocument.Parse(item.Json).RootElement);
+                    }
+                    catch
+                    {
+                        return (item.Name, Root: (JsonElement?)null);
+                    }
+                })
+                .Where(x => x.Root.HasValue)
+                .Select(item =>
+                {
+                    var items = item.Root
+                        ?.EnumerateObject()
                         .Select(item => new ResourceItem { Key = item.Name, Value = item.Value.GetString() })
-                        .ToArray();
+                        .ToList()
+                        ?? new System.Collections.Generic.List<ResourceItem>();
+
+                    return new EmbededResourceFile(item.Name, items.ToResourceFileContent());
                 })
                 .ToArray();
 

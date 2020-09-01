@@ -37,6 +37,10 @@ namespace Mohmd.JsonResources.Providers
                 if (!MemoryStorage.AssemblyResources.Any())
                 {
                     EmbeddedResourcesHelper.GetResources(AssemblyCollection.Assemblies.ToArray())
+                        .Break(list =>
+                        {
+
+                        })
                         .ToList()
                         .ForEach(MemoryStorage.AssemblyResources.Add);
                 }
@@ -114,8 +118,10 @@ namespace Mohmd.JsonResources.Providers
                 {
                     return _assemblyResources.Value
                         .SelectMany(x => x.DefaultResources)
-                        .ToList()
-                        .ToResourceFileContent();
+                        .Where(x => x.Name == _resourceFileLocation)
+                        .FirstOrDefault()
+                        ?.Items
+                        ?.ToResourceFileContent();
                 });
             }
             else
@@ -123,12 +129,17 @@ namespace Mohmd.JsonResources.Providers
                 return MemoryStorage.Find(new ResourceFileKey(_resourceFileLocation, cultureInfo.Name), key =>
                 {
                     return _assemblyResources.Value
-                        .SelectMany(x => x.CultureResources)
+                        .SelectMany(x => x.CulturalFiles)
                         .Where(x => IsCultureInSameFamily(cultureInfo)(x.CultureInfo))
-                        .SelectMany(x => x.Resources)
-                        .Union(_assemblyResources.Value.SelectMany(x => x.DefaultResources))
-                        .ToList()
-                        .ToResourceFileContent();
+                        .SelectMany(x => x.Files)
+                        .Break(list =>
+                        {
+
+                        })
+                        .Where(x => x.Name == _resourceFileLocation)
+                        .FirstOrDefault()
+                        ?.Items
+                        ?.ToResourceFileContent();
                 });
             }
         }
