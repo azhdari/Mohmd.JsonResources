@@ -35,11 +35,11 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<IStringLocalizerFactory, JsonStringLocalizerFactory>();
             services.AddSingleton<IJsonResourceProviderFactory, JsonResourceProviderFactory>();
 
-            services.Configure<JsonLocalizationOptions>(s =>
-            {
-                setupAction?.Invoke(s);
-                JsonLocalizationOptions.Current = s;
-            });
+            JsonLocalizationOptions options = new JsonLocalizationOptions();
+            setupAction?.Invoke(options);
+            JsonLocalizationOptions.SetCurrentJsonLocalizationOptions(options);
+
+            services.Configure<JsonLocalizationOptions>(s => { });
             services.AddScoped(serviceProvider => serviceProvider.GetService<IOptionsSnapshot<JsonLocalizationOptions>>().Value);
 
             return services;

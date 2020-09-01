@@ -6,6 +6,17 @@ namespace Mohmd.JsonResources.Extensions
 {
     public class JsonLocalizationOptions
     {
+        private static JsonLocalizationOptions? _current = null;
+
+        public static void SetCurrentJsonLocalizationOptions(JsonLocalizationOptions option) => _current = option;
+        public static JsonLocalizationOptions Current
+        {
+            get
+            {
+                return _current ?? new JsonLocalizationOptions();
+            }
+        }
+
         public string ResourcesPath { get; set; } = "Resources";
         public string GlobalResourceFileName { get; set; } = "Global";
         public string AreasResourcePrefix { get; set; } = "Area";
@@ -13,8 +24,6 @@ namespace Mohmd.JsonResources.Extensions
 
         public string DefaultUICultureName { get; set; } = "en-US";
         public bool UseEmbededResources { get; set; } = false;
-
-        public static JsonLocalizationOptions Current { get; set; }
 
         public JsonLocalizationOptions AddAssembly<T>()
         {
