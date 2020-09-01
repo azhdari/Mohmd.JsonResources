@@ -1,5 +1,8 @@
-﻿namespace Mohmd.JsonResources.Internal.Types
+﻿using System.Diagnostics;
+
+namespace Mohmd.JsonResources.Internal.Types
 {
+    [DebuggerDisplay("{Name} ({Items.Count})")]
     public class EmbededResourceFile
     {
         public EmbededResourceFile(string name, ResourceFileContent items)

@@ -22,7 +22,7 @@ namespace Mohmd.JsonResources.Providers
         {
             if (options.UseEmbededResources)
             {
-                return new EmbeddedProvider(resourceBaseName, _actionContextAccessor, options);
+                return new EmbeddedProvider(resourceBaseName, _env, _actionContextAccessor, options);
             }
             else
             {

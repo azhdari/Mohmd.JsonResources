@@ -91,6 +91,11 @@ namespace Mohmd.JsonResources.ExampleCore30
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+                endpoints.MapAreaControllerRoute(
+                    name: "default",
+                    areaName: "Admin",
+                    pattern: "admin/{controller=Home}/{action=Index}/{id?}");
             });
         }
     }

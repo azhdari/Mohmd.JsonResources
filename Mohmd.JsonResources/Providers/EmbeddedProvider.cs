@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,27 +21,26 @@ namespace Mohmd.JsonResources.Providers
 {
     public class EmbeddedProvider : IJsonResourceProvider
     {
+        private readonly IHostingEnvironment _env;
         private readonly IActionContextAccessor _actionContextAccessor;
         private readonly JsonLocalizationOptions _options;
 
-        private readonly string _resourceFileLocation;
+        private readonly string _resourceFileName;
         private readonly Lazy<AssemblyResources[]> _assemblyResources;
 
-        public EmbeddedProvider(string resourceBaseName, IActionContextAccessor actionContextAccessor, JsonLocalizationOptions options)
+        public EmbeddedProvider(string resourceFileName, IHostingEnvironment env, IActionContextAccessor actionContextAccessor, JsonLocalizationOptions options)
         {
-            _options = options;
+            _env = env;
             _actionContextAccessor = actionContextAccessor;
+            _options = options;
 
-            _resourceFileLocation = LocalizerUtil.ExpandPaths(resourceBaseName, _options.ResourcesPath).First();
+            _resourceFileName = resourceFileName;
+
             _assemblyResources = new Lazy<AssemblyResources[]>(() =>
             {
                 if (!MemoryStorage.AssemblyResources.Any())
                 {
                     EmbeddedResourcesHelper.GetResources(AssemblyCollection.Assemblies.ToArray())
-                        .Break(list =>
-                        {
-
-                        })
                         .ToList()
                         .ForEach(MemoryStorage.AssemblyResources.Add);
                 }
@@ -114,11 +114,14 @@ namespace Mohmd.JsonResources.Providers
         {
             if (isDefaultCulture)
             {
-                return MemoryStorage.Find(new ResourceFileKey(_resourceFileLocation, cultureInfo.Name), key =>
+                return MemoryStorage.Find(new ResourceFileKey(_resourceFileName, cultureInfo.Name), key =>
                 {
                     return _assemblyResources.Value
                         .SelectMany(x => x.DefaultResources)
-                        .Where(x => x.Name == _resourceFileLocation)
+                        .Select(file => (File: file, DisplayOrder: GetDisplayOrder(file, FindCurrentContextAreaName())))
+                        .Where(item => item.DisplayOrder >= 0)
+                        .OrderBy(item => item.DisplayOrder)
+                        .Select(item => item.File)
                         .FirstOrDefault()
                         ?.Items
                         ?.ToResourceFileContent();
@@ -126,17 +129,20 @@ namespace Mohmd.JsonResources.Providers
             }
             else
             {
-                return MemoryStorage.Find(new ResourceFileKey(_resourceFileLocation, cultureInfo.Name), key =>
+                return MemoryStorage.Find(new ResourceFileKey(_resourceFileName, cultureInfo.Name), key =>
                 {
                     return _assemblyResources.Value
                         .SelectMany(x => x.CulturalFiles)
                         .Where(x => IsCultureInSameFamily(cultureInfo)(x.CultureInfo))
                         .SelectMany(x => x.Files)
+                        .Select(file => (File: file, DisplayOrder: GetDisplayOrder(file, FindCurrentContextAreaName())))
+                        .Where(item => item.DisplayOrder >= 0)
+                        .OrderBy(item => item.DisplayOrder)
+                        .Select(item => item.File)
                         .Break(list =>
                         {
-
+                            var item = list.Where(x => x.Name == _resourceFileName).ToList();
                         })
-                        .Where(x => x.Name == _resourceFileLocation)
                         .FirstOrDefault()
                         ?.Items
                         ?.ToResourceFileContent();
@@ -166,5 +172,55 @@ namespace Mohmd.JsonResources.Providers
             => (LocalizerUtil.IsChildCulture(cultureInfo, toCheck) || LocalizerUtil.IsChildCulture(toCheck, cultureInfo));
 
         private bool IsDefaultCulture(CultureInfo cultureInfo) => IsCultureInSameFamily(new CultureInfo(_options.DefaultUICultureName))(cultureInfo);
+
+        private string GetResourcesBaseLocation()
+        {
+            string result = $"{_env.ApplicationName}.{_options.ResourcesPath.Replace("/", ".").Replace("\\", ".")}";
+            return result;
+        }
+
+        private string GetFileName(EmbededResourceFile file)
+        {
+            string path = GetResourcesBaseLocation();
+            string result = file.Name.Replace(path, string.Empty).Trim('.');
+            return result;
+        }
+
+        private bool IsGlobal(EmbededResourceFile file) => GetFileName(file).Equals($"{_options.GlobalResourceFileName}.json", StringComparison.OrdinalIgnoreCase);
+
+        private bool IsArea(EmbededResourceFile file, string areaName)
+        {
+            var match = Regex.Match(GetFileName(file), $"^({_options.AreasResourcePrefix})\\.([^\\.]+)\\.json$", RegexOptions.IgnoreCase);
+            if (match.Success && match.Groups.Count == 3)
+            {
+                return match.Groups[2].Value.Equals(areaName, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private bool IsExact(EmbededResourceFile file) => file.Name.Equals($"{_resourceFileName}.json", StringComparison.OrdinalIgnoreCase);
+
+        private int GetDisplayOrder(EmbededResourceFile file, string? areaName = null)
+        {
+            if (IsExact(file))
+            {
+                return 1;
+            }
+            else if (areaName != null && IsArea(file, areaName))
+            {
+                return 2;
+            }
+            else if (IsGlobal(file))
+            {
+                return 3;
+            }
+            else
+            {
+                return -1;
+            }
+        }
     }
 }
