@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
-using Mohmd.JsonResources;
 using Mohmd.JsonResources.Extensions;
 using Mohmd.JsonResources.Internal;
 using Mohmd.JsonResources.Providers;

@@ -51,7 +51,10 @@ namespace Mohmd.JsonResources.Internal.Embedded
             string filePath = Path.Combine(assemblyLocation, ci.Name, assemblyFileName);
             CultureInfo? cultureInfo = File.Exists(filePath) ? ci : null;
 
-            Console.WriteLine("{0} FilePath: {1}", cultureInfo != null ? "Exists" : "", filePath);
+            if (cultureInfo != null)
+            {
+                Console.WriteLine("Found culture {0} at {1}", cultureInfo.Name, filePath);
+            }
 
             return cultureInfo;
         };

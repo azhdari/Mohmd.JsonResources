@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
-    <Version>2.0.0-alpha2</Version>
+    <Version>2.0.0-alpha3</Version>
     <Authors>Mohammad Azhdari</Authors>
     <Product>JsonResources</Product>
     <Description>JSON Localization Resources for .netstandard 2.1 and AspNetCore 3.0</Description>
